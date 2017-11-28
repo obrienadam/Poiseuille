@@ -1,0 +1,175 @@
+from ..components.nodes import Node, Input, Output
+from ..components.equation import Equation, Term
+
+
+class Block(object):
+    def __init__(self, name='Block'):
+        self.name = name
+        self.nodes = []
+
+    def add_nodes(self, *nodes):
+        self.nodes.extend(nodes)
+
+    def continuity_equation(self):
+        r_list = [node.connector.r for node in self.nodes]
+        c_nodes = [node.connector.other(node) for node in self.nodes]
+        return Equation(
+            [Term(node, 1. / r) for node, r in zip(c_nodes, r_list)]
+            + [Term(node, -1. / r) for node, r in zip(self.nodes, r_list)],
+            rhs=0.
+        )
+
+    def type(self):
+        return 'Block'
+
+    def properties(self):
+        raise NotImplementedError('Properties not defined for block type.')
+
+    def solution(self):
+        raise NotImplementedError('Solution not defined for block type')
+
+    def equations(self):
+        raise NotImplementedError('Equations not defined for block type.')
+
+    def update_properties(self):
+        pass
+
+
+class PressureReservoir(Block):
+    def __init__(self, p=0.):
+        super(PressureReservoir, self).__init__()
+        self.p = p
+        self.node = Node(self, p=0.)
+        self.add_nodes(self.node)
+
+    def type(self):
+        return 'Pressure Reservoir'
+
+    def properties(self):
+        return {'Pressure': self.p}
+
+    def solution(self):
+        return {}
+
+    def equations(self):
+        return [Equation([Term(self.node, 1.)], self.p)]
+
+    def update_properties(self):
+        pass
+
+class Fan(Block):
+    def __init__(self, dp=0.):
+        super(Fan, self).__init__()
+        self.dp = dp
+        self.input = Input(self, p=0.)
+        self.output = Output(self, p=0.)
+        self.add_nodes(self.input, self.output)
+
+    def type(self):
+        return 'Fan'
+
+    def properties(self):
+        return {'Pressure differential': self.dp}
+
+    def solution(self):
+        return {'Power': self.dp}
+
+    def equations(self):
+        return [Equation([Term(self.input, -1.), Term(self.output, 1.)], self.dp), self.continuity_equation()]
+
+    def update_properties(self):
+        pass
+
+class ConstantDeliveryFan(Block):
+    def __init__(self, flow_rate=0.):
+        super(ConstantDeliveryFan, self).__init__()
+        self.flow_rate = flow_rate
+        self.dp = 0.
+        self.input = Input(self, p=0.)
+        self.output = Output(self, p=0.)
+        self.add_nodes(self.input, self.output)
+
+    def type(self):
+        return 'Constant Delivery Fan'
+
+    def equations(self):
+        r = self.input.connector.r + self.output.connector.r
+        eqn = Equation([Term(self.input, -1. / r), Term(self.output, 1. / r)], self.flow_rate)
+        return [eqn, self.continuity_equation()]
+
+    def update_properties(self):
+        self.dp = self.output.p - self.input.p
+
+class PowerCurveFan(Fan):
+    def __init__(self, fcn):
+        self.fcn = fcn
+        self.flow_rate = 0.
+        super(PowerCurveFan, self).__init__(dp=self.fcn(self.flow_rate))
+
+    def type(self):
+        return 'Power Curve Fan'
+
+    def update_properties(self):
+        self.flow_rate = self.input.connector.flow_rate
+        self.dp = self.fcn(self.flow_rate)
+
+class RestrictorValve(Block):
+    def __init__(self, max_flow_rate=0., allow_backflow=True):
+        super(RestrictorValve, self).__init__()
+        self.flow_rate = 0.
+        self.r = 0.
+        self.max_flow_rate = max_flow_rate
+        self.allow_backflow = allow_backflow
+        self.input = Node(self, p=0.)
+        self.output = Node(self, p=0.)
+        self.add_nodes(self.input, self.output)
+
+    def type(self):
+        return 'Restrictor Valve'
+
+    def equations(self):
+        if abs(self.flow_rate) > abs(self.max_flow_rate):
+            r_line = self.input.connector.r + self.output.connector.r
+            dp_line = abs(self.input.connector.other(self.input).p - self.output.connector.other(self.output).p)
+            self.r = dp_line / self.max_flow_rate - r_line
+        else:
+            self.r = 0.
+
+        eqn = Equation([Term(self.output, -1.), Term(self.input, 1.)], self.r * self.max_flow_rate)
+        return [eqn, self.continuity_equation()]
+
+    def update_properties(self):
+        if self.r > 0.:
+            self.flow_rate = (self.input.p - self.output.p) / self.r
+        else:
+            self.flow_rate = self.input.connector.flow_rate
+
+class PerfectSplitter(Block):
+    def __init__(self, num_outputs=1):
+        super(PerfectSplitter, self).__init__()
+        self.input = Input(self, p=0)
+        self.outputs = [Output(self, p=0) for i in range(num_outputs)]
+        self.add_nodes(self.input, *self.outputs)
+
+    def type(self):
+        return 'Perfect Splitter'
+
+    def equations(self):
+        eqns = [Equation([Term(self.input, 1), Term(output, -1)], 0.) for output in self.outputs]
+        eqns.append(self.continuity_equation())
+
+        return eqns
+
+class PerfectJunction(Block):
+    def __init__(self, num_nodes=1):
+        super(PerfectJunction, self).__init__()
+        self.nodes = [Node(self, p=0) for i in range(num_nodes)]
+
+    def type(self):
+        return 'Perfect Junction'
+
+    def equations(self):
+        eqns = [Equation([Term(self.nodes[-1], 1.), Term(node, -1.)], 0.) for node in self.nodes[:-1]]
+        eqns.append(self.continuity_equation())
+
+        return eqns

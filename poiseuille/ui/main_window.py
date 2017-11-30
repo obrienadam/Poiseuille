@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QMainWindow, QTreeWidgetItem, QTreeWidget, QHBoxLayo
 from PyQt5 import uic
 
 from .graphics_scene import GraphicsScene
-from .block_graphics_item import PressureReservoirGraphicsItem, FanGraphicsItem, ConstFlowFanGraphicsItem
+from .block_graphics_item import *
 from .palette import BlockPaletteItem
 
 class MainWindow(QMainWindow):
@@ -29,3 +29,4 @@ class MainWindow(QMainWindow):
         self.palette_env.layout().addWidget(BlockPaletteItem(block=PressureReservoirGraphicsItem))
         self.palette_power.layout().addWidget(BlockPaletteItem(block=FanGraphicsItem))
         self.palette_power.layout().addWidget(BlockPaletteItem(block=ConstFlowFanGraphicsItem))
+        self.palette_valves.layout().addWidget(BlockPaletteItem(block=RestrictorValveGraphicsItem))

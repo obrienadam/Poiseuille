@@ -15,6 +15,9 @@ class Connector(object):
             self.output = output
             input.connector = self
             output.connector = self
+            return True
+
+        return False
 
     def other(self, node):
         if node is self.input:
@@ -27,7 +30,7 @@ class Connector(object):
     def update_properties(self):
         raise NotImplementedError
 
-
+"""
 class PoiseuilleConnector(Connector):
     def __init__(self, r=1., **proerties):
         super(PoiseuilleConnector, self).__init__(r=r, flow_rate=0., **proerties)
@@ -46,3 +49,4 @@ class ProctorAndGambleConnector(PoiseuilleConnector):
     def update_properties(self):
         self.r = sqrt(self.coeff * abs(self.input.p - self.output.p))
         self.flow_rate = (self.input.p - self.output.p) / self.r
+"""

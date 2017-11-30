@@ -31,8 +31,8 @@ class Block(object):
     def equations(self):
         raise NotImplementedError('Equations not defined for block type.')
 
-    def update_properties(self):
-        pass
+    def update_properties(self, **kwargs):
+        raise NotImplementedError('Update properties not implemented for this block type.')
 
 
 class PressureReservoir(Block):
@@ -54,8 +54,8 @@ class PressureReservoir(Block):
     def equations(self):
         return [Equation([Term(self.node, 1.)], self.p)]
 
-    def update_properties(self):
-        pass
+    def update_properties(self, **kwargs):
+        self.p = kwargs.get('Pressure', self.p)
 
 class Fan(Block):
     def __init__(self, dp=0.):
@@ -77,8 +77,8 @@ class Fan(Block):
     def equations(self):
         return [Equation([Term(self.input, -1.), Term(self.output, 1.)], self.dp), self.continuity_equation()]
 
-    def update_properties(self):
-        pass
+    def update_properties(self, **kwargs):
+        self.dp = kwargs.get('Pressure differential', self.dp)
 
 class ConstantDeliveryFan(Block):
     def __init__(self, flow_rate=0.):
@@ -92,13 +92,19 @@ class ConstantDeliveryFan(Block):
     def type(self):
         return 'Constant Delivery Fan'
 
+    def properties(self):
+        return {'Flow rate': self.flow_rate}
+
+    def solution(self):
+        return {'Pressure differential': self.dp}
+
     def equations(self):
         r = self.input.connector.r + self.output.connector.r
         eqn = Equation([Term(self.input, -1. / r), Term(self.output, 1. / r)], self.flow_rate)
         return [eqn, self.continuity_equation()]
 
-    def update_properties(self):
-        self.dp = self.output.p - self.input.p
+    def update_properties(self, **kwargs):
+        self.flow_rate = kwargs.get('Flow rate', self.flow_rate)
 
 class PowerCurveFan(Fan):
     def __init__(self, fcn):
@@ -127,6 +133,17 @@ class RestrictorValve(Block):
     def type(self):
         return 'Restrictor Valve'
 
+    def properties(self):
+        return {
+            'Max flow rate': self.max_flow_rate,
+        }
+
+    def solution(self):
+        return {
+            'Flow rate': self.flow_rate,
+            'Resistance': self.r,
+        }
+
     def equations(self):
         if abs(self.flow_rate) > abs(self.max_flow_rate):
             r_line = self.input.connector.r + self.output.connector.r
@@ -138,11 +155,8 @@ class RestrictorValve(Block):
         eqn = Equation([Term(self.output, -1.), Term(self.input, 1.)], self.r * self.max_flow_rate)
         return [eqn, self.continuity_equation()]
 
-    def update_properties(self):
-        if self.r > 0.:
-            self.flow_rate = (self.input.p - self.output.p) / self.r
-        else:
-            self.flow_rate = self.input.connector.flow_rate
+    def update_properties(self, **kwargs):
+        self.max_flow_rate = kwargs.get('Max flow rate', self.max_flow_rate)
 
 class PerfectSplitter(Block):
     def __init__(self, num_outputs=1):

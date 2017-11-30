@@ -7,37 +7,17 @@ from .connector_graphics_path_item import ConnectorGraphicsPathItem
 
 class NodeGraphicsItem(QtWidgets.QGraphicsEllipseItem):
     def __init__(self, node, block, x=0, y=0):
-        super(NodeGraphicsItem, self).__init__(x, y, 10, 10, parent=block)
+        super().__init__(x, y, 10, 10, parent=block)
         self.node = node
         self.block = block
         self.connector = None
 
-    def mousePressEvent(self, QGraphicsSceneMouseEvent):
-        if not self.node.connector:
-            self.connector = ConnectorGraphicsPathItem(self)
-            self.scene().addItem(self.connector)
-
-    def mouseMoveEvent(self, QGraphicsSceneMouseEvent):
-        if self.connector:
-            self.connector.setPathTo(QGraphicsSceneMouseEvent.scenePos())
-
-    def mouseReleaseEvent(self, QGraphicsSceneMouseEvent):
-        if self.connector:
-            self.scene().removeItem(self.connector)
-            item = self.scene().itemAt(QGraphicsSceneMouseEvent.scenePos(), QtGui.QTransform())
-
-            if isinstance(item, NodeGraphicsItem):
-                if self.connector.connect(item):
-                    self.connector.update_path()
-                    self.scene().addItem(self.connector)
-                else:
-                    self.connector = None
-            else:
-                self.connector = None
+    def center(self):
+        return self.mapToScene(self.boundingRect().center())
 
 class BlockGraphicsItem(QtWidgets.QGraphicsPixmapItem):
     def __init__(self, block=None, file='resources/default'):
-        super(BlockGraphicsItem, self).__init__(QtGui.QPixmap(file), None)
+        super().__init__(QtGui.QPixmap(file), None)
         self.block = block
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable)
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable)
@@ -49,7 +29,9 @@ class BlockGraphicsItem(QtWidgets.QGraphicsPixmapItem):
 
     def mouseDoubleClickEvent(self, QGraphicsSceneMouseEvent):
         dialog = BlockDialog(self.block)
-        dialog.exec_()
+
+        if dialog.exec() == BlockDialog.Accepted:
+            self.block.update_properties(**dialog.properties())
 
     def mouseMoveEvent(self, QGraphicsSceneMouseEvent):
         super(BlockGraphicsItem, self).mouseMoveEvent(QGraphicsSceneMouseEvent)
@@ -79,15 +61,25 @@ class ConstFlowFanGraphicsItem(BlockGraphicsItem):
         super(ConstFlowFanGraphicsItem, self).__init__(block=block, file='resources/const_flow_fan')
 
     def init_nodes(self):
-        self.nodes.append(NodeGraphicsItem(self.block.input, self, x=-5, y=10))
+        self.nodes.append(NodeGraphicsItem(self.block.input, self, x=-7.5, y=17.5))
+        self.nodes.append(NodeGraphicsItem(self.block.output, self, x=47.5, y=17.5))
+
+class RestrictorValveGraphicsItem(BlockGraphicsItem):
+    def __init__(self, block=RestrictorValve()):
+        super(RestrictorValveGraphicsItem, self).__init__(block=block, file='resources/valve')
+
+    def init_nodes(self):
+        self.nodes.append(NodeGraphicsItem(self.block.input, self, x=-7.5, y=17.5))
         self.nodes.append(NodeGraphicsItem(self.block.output, self, x=47.5, y=17.5))
 
 def construct_block(type):
     if type == 'Pressure Reservoir':
-        return PressureReservoirGraphicsItem()
+        return PressureReservoirGraphicsItem(block=PressureReservoir())
     elif type == 'Fan':
-        return FanGraphicsItem()
+        return FanGraphicsItem(block=Fan())
     elif type == 'Constant Delivery Fan':
-        return ConstFlowFanGraphicsItem()
+        return ConstFlowFanGraphicsItem(block=ConstantDeliveryFan())
+    elif type == 'Restrictor Valve':
+        return RestrictorValveGraphicsItem(block=RestrictorValve())
     else:
         raise ValueError('Unrecognized block type "{}".'.format(type))

@@ -22,7 +22,7 @@ class Node(object):
             self.connector.disconnect()
 
     def can_connect(self, node):
-        return (node is not self) and (node.block is not self.block)
+        return (node is not self) and (node.block is not self.block) and not self.connector and not node.connector
 
 
 class Input(Node):

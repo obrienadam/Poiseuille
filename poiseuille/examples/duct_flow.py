@@ -1,5 +1,5 @@
 from poiseuille.components.blocks import PressureReservoir
-from poiseuille.components.connectors import PoiseuilleConnector, ProctorAndGambleConnector
+from poiseuille.components.connectors import ProctorAndGambleConnector
 from poiseuille.systems.system import IncompressibleSystem
 
 def run():
@@ -10,10 +10,10 @@ def run():
 
     system = IncompressibleSystem([p1, p2])
 
-    system.solve(max_iters=19)
+    system.solve(toler=1e-14, verbose=1)
 
     for connector in system.connectors():
-        print connector.flow_rate
+        print(connector.flow_rate)
 
 if __name__ == '__main__':
     run()

@@ -7,16 +7,20 @@ from .block_graphics_item import NodeGraphicsItem
 from .connector_graphics_path_item import ConnectorGraphicsPathItem
 
 class GraphicsScene(QGraphicsScene):
-    def __init__(self, parent):
+    def __init__(self, parent, ConnectorType):
         super(GraphicsScene, self).__init__(parent=parent)
+        self.ConnectorType = ConnectorType
         self.node = None
         self.connector = None
 
     def blocks(self):
+        return [item.block for item in self.blockGraphicsItems()]
+
+    def blockGraphicsItems(self):
         return [item for item in self.items() if isinstance(item, BlockGraphicsItem)]
 
     def connectors(self):
-        return [item for item in self.items() if isinstance(item, ConnectorGraphicsPathItem)]
+        return [item.connector for item in self.items() if isinstance(item, ConnectorGraphicsPathItem)]
 
     def num_blocks(self):
         return sum(isinstance(item, BlockGraphicsItem) for item in self.items())
@@ -37,12 +41,11 @@ class GraphicsScene(QGraphicsScene):
     def mousePressEvent(self, e):
         item  = self.itemAt(e.scenePos(), QTransform())
 
-        if isinstance(item, NodeGraphicsItem):
+        if isinstance(item, NodeGraphicsItem) and not item.connector:
             self.node = item
-            self.connector = ConnectorGraphicsPathItem()
+            self.connector = ConnectorGraphicsPathItem(connector_type=self.ConnectorType)
             self.connector.set_path(item.center(), e.scenePos())
             self.addItem(self.connector)
-            print(self)
         else:
             super(GraphicsScene, self).mousePressEvent(e)
 

@@ -11,11 +11,11 @@ class Block(object):
         self.nodes.extend(nodes)
 
     def continuity_equation(self):
-        r_list = [node.connector.r for node in self.nodes]
-        c_nodes = [node.connector.other(node) for node in self.nodes]
+        conn_resistances = [node.connector.r for node in self.nodes]
+        conn_nodes = [node.connector.other(node) for node in self.nodes]
         return Equation(
-            [Term(node, 1. / r) for node, r in zip(c_nodes, r_list)]
-            + [Term(node, -1. / r) for node, r in zip(self.nodes, r_list)],
+            [Term(node, 1. / r) for node, r in zip(conn_nodes, conn_resistances)]
+            + [Term(node, -1. / r) for node, r in zip(self.nodes, conn_resistances)],
             rhs=0.
         )
 
@@ -41,10 +41,13 @@ class Block(object):
     def update_solution(self, **kwargs):
         raise NotImplementedError('Update solution is not implemented for this block type "{}".'.format(self.type()))
 
+    def update_solution(self):
+        raise NotImplementedError('Update solution not implemented for this block type.')
+
 
 class PressureReservoir(Block):
     def __init__(self, p=0.):
-        super(PressureReservoir, self).__init__()
+        super(PressureReservoir, self).__init__(name='PATM')
         self.p = p
         self.node = Node(self, p=0.)
         self.add_nodes(self.node)
@@ -64,13 +67,13 @@ class PressureReservoir(Block):
     def update_properties(self, **kwargs):
         self.p = kwargs.get('Pressure', self.p)
 
-    def update_solution(self, **kwargs):
+    def update_solution(self):
         pass
 
 
 class Fan(Block):
     def __init__(self, dp=0.):
-        super(Fan, self).__init__()
+        super(Fan, self).__init__(name='Fan')
         self.dp = dp
         self.power = 0.
         self.flow_rate = 0.
@@ -93,7 +96,7 @@ class Fan(Block):
     def update_properties(self, **kwargs):
         self.dp = kwargs.get('Pressure differential', self.dp)
 
-    def update_solution(self, **kwargs):
+    def update_solution(self):
         pass
 
 
@@ -123,6 +126,9 @@ class ConstantDeliveryFan(Block):
     def update_properties(self, **kwargs):
         self.flow_rate = kwargs.get('Flow rate', self.flow_rate)
 
+    def update_solution(self):
+        self.dp = self.output.p - self.input.p
+
 
 class PowerCurveFan(Fan):
     def __init__(self, fcn):
@@ -139,11 +145,13 @@ class PowerCurveFan(Fan):
 
 
 class ResistorValve(Block):
-    def __init__(self, r=0.):
+    def __init__(self, r=0., min_r=1e-12):
         super().__init__(name='R')
         self.r = r
+        self.min_r = min_r
         self.input, self.output = Node(self, p=0.), Node(self, p=0.)
         self.add_nodes(self.input, self.output)
+        self.flow_rate = 0.
 
     def type(self):
         return 'Resistor Valve'
@@ -165,21 +173,18 @@ class ResistorValve(Block):
 
     def update_properties(self, **kwargs):
         self.r = kwargs.get('Resistance', self.r)
+        self.min_r = kwargs.get('Minimum resistance', self.min_r)
 
-    def update_solution(self, **kwargs):
-        pass
+    def update_solution(self):
+        if self.r != 0.:
+            self.flow_rate = (self.input.p - self.output.p) / self.r
 
 
-class RestrictorValve(Block):
+class RestrictorValve(ResistorValve):
     def __init__(self, max_flow_rate=0., allow_backflow=True):
-        super(RestrictorValve, self).__init__()
-        self.flow_rate = 0.
-        self.r = 0.
+        super().__init__(r=0)
         self.max_flow_rate = max_flow_rate
         self.allow_backflow = allow_backflow
-        self.input = Node(self, p=0.)
-        self.output = Node(self, p=0.)
-        self.add_nodes(self.input, self.output)
 
     def type(self):
         return 'Restrictor Valve'
@@ -203,8 +208,7 @@ class RestrictorValve(Block):
         else:
             self.r = 0.
 
-        eqn = Equation([Term(self.output, -1.), Term(self.input, 1.)], self.r * self.max_flow_rate)
-        return [eqn, self.continuity_equation()]
+        return super().equations()
 
     def update_properties(self, **kwargs):
         self.max_flow_rate = kwargs.get('Max flow rate', self.max_flow_rate)
@@ -241,5 +245,5 @@ class PerfectJunction(Block):
 
         return eqns
 
-    def update_solution(self, **kwargs):
+    def update_solution(self):
         pass

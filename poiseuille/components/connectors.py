@@ -41,6 +41,10 @@ class Connector(object):
     def update_properties(self):
         raise NotImplementedError
 
+    def update_solution(self):
+        raise NotImplementedError
+
+
 class LinearResistanceConnector(Connector):
     def __init__(self, r=1.):
         super().__init__(r=r, flow_rate=0.)
@@ -51,21 +55,16 @@ class LinearResistanceConnector(Connector):
     def update_solution(self):
         self.flow_rate = (self.input.p - self.output.p) / self.r
 
-class PoiseuilleConnector(Connector):
-    def __init__(self, r=1., **proerties):
-        super(PoiseuilleConnector, self).__init__(r=r, flow_rate=0., **proerties)
 
-    def update_properties(self):
-        self.flow_rate = (self.input.p - self.output.p) / self.r
-
-
-class ProctorAndGambleConnector(PoiseuilleConnector):
+class ProctorAndGambleConnector(Connector):
     def __init__(self, l=50., d=6., k_ent=0.):
         super(ProctorAndGambleConnector, self).__init__(r=1., l=l, d=d, k_ent=k_ent)
-        area = pi * (self.d / 24.)**2
-        self.coeff = 2.238 / self.d * (1. / 1000.) ** 2 * (0.1833 + (1. / self.d) ** (1. / 3.)) * self.l / (100. * area**2)
-        self.coeff += self.k_ent / (4005**2*area**2)
+        area = pi * (self.d / 24.) ** 2
+        self.coeff = 2.238 / self.d * (1. / 1000.) ** 2 * (0.1833 + (1. / self.d) ** (1. / 3.)) * self.l / (
+                100. * area ** 2)
+        self.coeff += self.k_ent / (4005 ** 2 * area ** 2)
+        self.flow_rate = 0.
 
-    def update_properties(self):
-        self.r = sqrt(self.coeff * abs(self.input.p - self.output.p))
+    def update_solution(self):
+        self.r = sqrt(self.coeff * abs(self.input.p - self.output.p)) + 1e-10
         self.flow_rate = (self.input.p - self.output.p) / self.r

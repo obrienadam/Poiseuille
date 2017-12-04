@@ -20,8 +20,7 @@ def run():
     c4.connect(fan.output, p3.node)
 
     system = IncompressibleSystem([p1, p2, p3, s, fan])
-    iters, error = system.solve(max_iters=100, toler=1e-12)
-    print 'Iters = {}, error = {}'.format(iters, error)
+    system.solve()
 
 if __name__ == '__main__':
     run()

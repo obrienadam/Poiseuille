@@ -1,6 +1,8 @@
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
+import scipy.optimize as opt
 import numpy as np
+
 
 class System(object):
     def __init__(self, blocks=[]):
@@ -23,14 +25,16 @@ class System(object):
     def equations(self):
         return [eqn for block in self.blocks for eqn in block.equations()]
 
-    def linear_system(self):
+    def matrix(self):
         self.assign_node_ids()
         eqns = self.equations()
         rows = [row for id, eqn in enumerate(eqns) for row in [id] * len(eqn.terms)]
         cols = [term.node.id for eqn in eqns for term in eqn.terms]
         vals = [term.coeff for eqn in eqns for term in eqn.terms]
+        return sp.coo_matrix((vals, (rows, cols)), shape=(len(eqns),) * 2).tocsr()
 
-        return sp.coo_matrix((vals, (rows, cols)), shape=(len(eqns),) * 2).tocsr(), np.array([eqn.rhs for eqn in eqns])
+    def rhs(self):
+        return np.array([eqn.rhs for eqn in self.equations()])
 
     def map_solution_to_nodes(self, soln):
         raise NotImplementedError
@@ -38,31 +42,43 @@ class System(object):
     def solve(self):
         raise NotImplementedError
 
+    class LinearPreconditioner(spla.LinearOperator):
+        def __init__(self, num_nodes, system):
+            super().__init__(shape=(num_nodes, num_nodes), dtype=np.float64)
+            self.system = system
+            self.A = system.matrix()
+
+        def _matvec(self, x):
+            return spla.spsolve(self.A, x)
+
+        def update(self, x, f):
+            self.system.map_solution_to_nodes(x)
+            self.A = self.system.matrix()
+
 
 class IncompressibleSystem(System):
     def map_solution_to_nodes(self, soln):
         for id, node in enumerate(self.nodes()):
             node.p = soln[id]
 
-    def solve(self, max_iters=10, toler=1e-10):
-        x = None
+        for conn in self.connectors():
+            conn.update_solution()
 
-        for iter in range(max_iters):
-            A, rhs = self.linear_system()
+        for block in self.blocks:
+            block.update_solution()
 
-            if x is not None:
-                if np.linalg.norm(A*x - rhs) <= toler:
-                    break
-
-            x = spla.spsolve(A, rhs)
+    def solve(self, maxiter=1000, toler=1e-10, verbose=0, method='gmres'):
+        def residual(x):
             self.map_solution_to_nodes(x)
+            A, rhs = self.matrix(), self.rhs()
+            return A * x - rhs
 
-            for connector in self.connectors():
-                connector.update_properties()
-                connector.update_solution()
+        inner_M = IncompressibleSystem.LinearPreconditioner(len(self.nodes()), self)
+        try:
+            p = opt.newton_krylov(residual, np.array([node.p for node in self.nodes()]), verbose=verbose,
+                                  inner_M=inner_M, f_tol=toler, method=method, maxiter=maxiter)
+        except:  # If iterations fail, restart using zeros
+            p = opt.newton_krylov(residual, np.zeros(len(self.nodes())), verbose=verbose,
+                                  inner_M=inner_M, f_tol=toler, method=method, maxiter=maxiter)
 
-            for block in self.blocks:
-                block.update_solution()
-
-        return iter, np.linalg.norm(A*x - rhs)
-
+        self.map_solution_to_nodes(p)

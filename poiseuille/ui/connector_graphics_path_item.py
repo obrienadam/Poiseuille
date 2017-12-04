@@ -18,6 +18,7 @@ class ConnectorGraphicsPathItem(QGraphicsPathItem):
         self.setFlag(QGraphicsPathItem.ItemIsSelectable)
         self.src_node = src_node
         self.dest_node = dest_node
+        self.connector_type = connector_type
         self.label = None
 
     def set_path(self, pt_A, pt_B):
@@ -40,7 +41,7 @@ class ConnectorGraphicsPathItem(QGraphicsPathItem):
 
     def connect(self, src_node, dest_node):
         if src_node.node.can_connect(dest_node.node):
-            self.connector = Connector()
+            self.connector = self.connector_type() if self.connector_type else Connector()
             self.src_node = src_node
             self.dest_node = dest_node
             self.src_node.connector = self

@@ -95,6 +95,7 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionRun"/>
   </widget>
   <widget class="QDockWidget" name="parameters_dock_widget">
    <property name="windowTitle">
@@ -143,6 +144,12 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="palette_dock_widget">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
    <property name="windowTitle">
     <string>Palette</string>
    </property>
@@ -153,8 +160,14 @@
     <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
       <widget class="QTabWidget" name="palette_tabs">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="currentIndex">
-        <number>3</number>
+        <number>2</number>
        </property>
        <widget class="QWidget" name="palette_env_tab">
         <attribute name="title">
@@ -163,6 +176,12 @@
         <layout class="QHBoxLayout" name="horizontalLayout_5">
          <item>
           <widget class="QScrollArea" name="palette_env">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="palette">
             <palette>
              <active>
@@ -1043,6 +1062,12 @@
         <layout class="QHBoxLayout" name="horizontalLayout_4">
          <item>
           <widget class="QScrollArea" name="palette_valves">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="palette">
             <palette>
              <active>
@@ -1483,6 +1508,12 @@
         <layout class="QHBoxLayout" name="horizontalLayout_7">
          <item>
           <widget class="QScrollArea" name="palette_joiners_splitters">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="palette">
             <palette>
              <active>
@@ -1907,7 +1938,7 @@
               <x>0</x>
               <y>0</y>
               <width>768</width>
-              <height>70</height>
+              <height>68</height>
              </rect>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_15"/>

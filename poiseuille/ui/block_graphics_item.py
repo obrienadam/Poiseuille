@@ -12,8 +12,19 @@ class NodeGraphicsItem(QtWidgets.QGraphicsEllipseItem):
         self.block = block
         self.connector = None
 
+    def disconnect(self):
+        if self.connector:
+            self.connector.disconnect()
+
     def center(self):
         return self.mapToScene(self.boundingRect().center())
+
+class BlockGraphicsItemLabel(QtWidgets.QGraphicsTextItem):
+    def __init__(self, parent, name='Block'):
+        super().__init__(parent)
+        self.setTextInteractionFlags(QtCore.Qt.TextEditable)
+        self.setPlainText(name)
+        self.setPos(parent.boundingRect().bottomLeft())
 
 class BlockGraphicsItem(QtWidgets.QGraphicsPixmapItem):
     def __init__(self, block=None, file='resources/default'):
@@ -21,11 +32,19 @@ class BlockGraphicsItem(QtWidgets.QGraphicsPixmapItem):
         self.block = block
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable)
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable)
+        self.init_label()
         self.nodes = []
         self.init_nodes()
 
+    def init_label(self, text='Block'):
+        self.label = BlockGraphicsItemLabel(self)
+
     def init_nodes(self):
         raise NotImplementedError('Block graphics items must implement node placement.')
+
+    def disconnect(self):
+        for node in self.nodes:
+            node.disconnect()
 
     def mouseDoubleClickEvent(self, QGraphicsSceneMouseEvent):
         dialog = BlockDialog(self.block)

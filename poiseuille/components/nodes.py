@@ -1,3 +1,5 @@
+from .connectors import Connector
+
 class Node(object):
     def __init__(self, block, **properties):
         for key, value in properties.items():
@@ -6,6 +8,18 @@ class Node(object):
         self.block = block
         self.id = None
         self.connector = None
+
+    def connect(self, node):
+        if self.can_connect(node):
+            self.disconnect()
+            node.disconnect()
+            self.connector = Connector()
+            self.connector.connect(self, node)
+            return self.connector
+
+    def disconnect(self):
+        if self.connector:
+            self.connector.disconnect()
 
     def can_connect(self, node):
         return (node is not self) and (node.block is not self.block)

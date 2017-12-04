@@ -1,7 +1,8 @@
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QTransform
 from PyQt5.QtWidgets import QGraphicsScene
 
-from .block_graphics_item import construct_block
+from .block_graphics_item import construct_block, BlockGraphicsItem
 from .block_graphics_item import NodeGraphicsItem
 from .connector_graphics_path_item import ConnectorGraphicsPathItem
 
@@ -11,12 +12,25 @@ class GraphicsScene(QGraphicsScene):
         self.node = None
         self.connector = None
 
+    def blocks(self):
+        return [item for item in self.items() if isinstance(item, BlockGraphicsItem)]
+
+    def connectors(self):
+        return [item for item in self.items() if isinstance(item, ConnectorGraphicsPathItem)]
+
+    def num_blocks(self):
+        return sum(isinstance(item, BlockGraphicsItem) for item in self.items())
+
+    def num_connectors(self):
+        return sum(isinstance(item, ConnectorGraphicsPathItem) for item in self.items())
+
     def dragMoveEvent(self, e):
         e.accept()
 
     def dropEvent(self, e):
         e.accept()
         block = construct_block(e.mimeData().text())
+        block.setPos(e.scenePos())
         self.addItem(block)
         block.mouseDoubleClickEvent(None)
 
@@ -28,7 +42,7 @@ class GraphicsScene(QGraphicsScene):
             self.connector = ConnectorGraphicsPathItem()
             self.connector.set_path(item.center(), e.scenePos())
             self.addItem(self.connector)
-            e.accept()
+            print(self)
         else:
             super(GraphicsScene, self).mousePressEvent(e)
 
@@ -48,8 +62,17 @@ class GraphicsScene(QGraphicsScene):
                     self.connector = None
                     return
 
-
             self.removeItem(self.connector)
             self.connector = None
         else:
             super(GraphicsScene, self).mouseReleaseEvent(e)
+
+    def keyPressEvent(self, e):
+        if e.key() == Qt.Key_Delete:
+            for item in self.selectedItems():
+                item.disconnect()
+
+                if isinstance(item, BlockGraphicsItem):
+                    self.removeItem(item)
+
+        super().keyPressEvent(e)

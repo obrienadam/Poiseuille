@@ -19,6 +19,10 @@ class Block(object):
             rhs=0.
         )
 
+    def disconnect(self):
+        for node in self.nodes:
+            node.disconnect()
+
     def type(self):
         return 'Block'
 
@@ -32,7 +36,10 @@ class Block(object):
         raise NotImplementedError('Equations not defined for block type.')
 
     def update_properties(self, **kwargs):
-        raise NotImplementedError('Update properties not implemented for this block type.')
+        raise NotImplementedError('Update properties not implemented for block type "{}".'.format(self.type()))
+
+    def update_solution(self, **kwargs):
+        raise NotImplementedError('Update solution is not implemented for this block type "{}".'.format(self.type()))
 
 
 class PressureReservoir(Block):
@@ -57,10 +64,16 @@ class PressureReservoir(Block):
     def update_properties(self, **kwargs):
         self.p = kwargs.get('Pressure', self.p)
 
+    def update_solution(self, **kwargs):
+        pass
+
+
 class Fan(Block):
     def __init__(self, dp=0.):
         super(Fan, self).__init__()
         self.dp = dp
+        self.power = 0.
+        self.flow_rate = 0.
         self.input = Input(self, p=0.)
         self.output = Output(self, p=0.)
         self.add_nodes(self.input, self.output)
@@ -72,13 +85,17 @@ class Fan(Block):
         return {'Pressure differential': self.dp}
 
     def solution(self):
-        return {'Power': self.dp}
+        return {'Flow rate': self.flow_rate, 'Power': self.power}
 
     def equations(self):
         return [Equation([Term(self.input, -1.), Term(self.output, 1.)], self.dp), self.continuity_equation()]
 
     def update_properties(self, **kwargs):
         self.dp = kwargs.get('Pressure differential', self.dp)
+
+    def update_solution(self, **kwargs):
+        pass
+
 
 class ConstantDeliveryFan(Block):
     def __init__(self, flow_rate=0.):
@@ -106,6 +123,7 @@ class ConstantDeliveryFan(Block):
     def update_properties(self, **kwargs):
         self.flow_rate = kwargs.get('Flow rate', self.flow_rate)
 
+
 class PowerCurveFan(Fan):
     def __init__(self, fcn):
         self.fcn = fcn
@@ -118,6 +136,39 @@ class PowerCurveFan(Fan):
     def update_properties(self):
         self.flow_rate = self.input.connector.flow_rate
         self.dp = self.fcn(self.flow_rate)
+
+
+class ResistorValve(Block):
+    def __init__(self, r=0.):
+        super().__init__(name='R')
+        self.r = r
+        self.input, self.output = Node(self, p=0.), Node(self, p=0.)
+        self.add_nodes(self.input, self.output)
+
+    def type(self):
+        return 'Resistor Valve'
+
+    def properties(self):
+        return {'Resistance': self.r}
+
+    def solution(self):
+        return {}
+
+    def equations(self):
+        p1 = self.input.connector.other(self.input)
+        p2 = self.input
+        p3 = self.output
+        r1 = self.input.connector.r
+        rv = self.r
+        eqn = Equation([Term(p2, rv / r1 + 1), Term(p1, -rv / r1), Term(p3, -1)])
+        return [eqn, self.continuity_equation()]
+
+    def update_properties(self, **kwargs):
+        self.r = kwargs.get('Resistance', self.r)
+
+    def update_solution(self, **kwargs):
+        pass
+
 
 class RestrictorValve(Block):
     def __init__(self, max_flow_rate=0., allow_backflow=True):
@@ -158,6 +209,7 @@ class RestrictorValve(Block):
     def update_properties(self, **kwargs):
         self.max_flow_rate = kwargs.get('Max flow rate', self.max_flow_rate)
 
+
 class PerfectSplitter(Block):
     def __init__(self, num_outputs=1):
         super(PerfectSplitter, self).__init__()
@@ -174,6 +226,7 @@ class PerfectSplitter(Block):
 
         return eqns
 
+
 class PerfectJunction(Block):
     def __init__(self, num_nodes=1):
         super(PerfectJunction, self).__init__()
@@ -187,3 +240,6 @@ class PerfectJunction(Block):
         eqns.append(self.continuity_equation())
 
         return eqns
+
+    def update_solution(self, **kwargs):
+        pass

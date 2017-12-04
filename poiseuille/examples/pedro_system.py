@@ -1,28 +1,91 @@
-from poiseuille.components.blocks import PressureReservoir, RestrictorValve, PerfectJunction, Fan
-from poiseuille.components.connectors import ProctorAndGambleConnector
+from poiseuille.components.blocks import PressureReservoir, ResistorValve, PerfectJunction, Fan
+from poiseuille.components.connectors import LinearResistanceConnector
 from poiseuille.systems.system import IncompressibleSystem
+from random import random
+
+p1 = PressureReservoir(p=0.)
+p2 = PressureReservoir(p=0.)
+p3 = PressureReservoir(p=0.)
+v1 = ResistorValve(r=1)
+v2 = ResistorValve(r=1)
+junc = PerfectJunction(num_nodes=3)
+fan = Fan(dp=1)
+conns = [LinearResistanceConnector(0.1) for i in range(6)]
+conns[0].connect(p1.node, v1.input)
+conns[1].connect(p2.node, v2.input)
+conns[2].connect(v1.output, junc.nodes[0])
+conns[3].connect(v2.output, junc.nodes[1])
+conns[4].connect(junc.nodes[2], fan.input)
+conns[5].connect(fan.output, p3.node)
+solver = IncompressibleSystem([p1, p2, p3, v1, v2, junc, fan])
 
 def run():
-    p = [PressureReservoir(p=0.) for i in xrange(5)]
-    j = PerfectJunction(num_nodes=5)
-    f = [Fan(dp=4.), Fan(dp=3.984)]
-    c = [ProctorAndGambleConnector(d=3+i%2, l=25+i) for i in xrange(7)]
+    def func(x):
+        dp, r1, r2, r3, r4 = x
+        return dp
 
-    c[0].connect(p[0].node, j.nodes[0])
-    c[1].connect(p[1].node, j.nodes[1])
-    c[2].connect(p[2].node, j.nodes[2])
-    c[3].connect(j.nodes[3], f[0].input)
-    c[4].connect(f[0].output, p[3].node)
-    c[5].connect(j.nodes[4], f[1].input)
-    c[6].connect(f[1].output, p[4].node)
+    def h1(x):
+        dp, r1, r2, r3, r4 = x
+        r = r2 + 0.003
+        q = dp / r
+        return q - 0.5
 
-    system = IncompressibleSystem(p + [j] + f)
-    iters, error = system.solve(max_iters=100)
+    def h2(x):
+        dp, r1, r2, r3, r4 = x
+        r = r1 + 0.012
+        q = dp / r
+        return q - 0.3
 
-    print iters, error
+    def h3(x):
+        dp, r1, r2, r3, r4 = x
+        r = r3 + 0.003544
+        q = dp / r
+        return q - 0.5
 
-    for c in system.connectors():
-        print c.flow_rate
+    def h4(x):
+        dp, r1, r2, r3, r4 = x
+        r = r4 + 0.012643
+        q = dp / r
+        return q - 0.000534
+
+    def h5(x):
+        dp, r1, r2, r3, r4 = x
+        return r1
+
+    def h6(x):
+        dp, r1, r2, r3, r4 = x
+        return r2
+
+    def h7(x):
+        dp, r1, r2, r3, r4 = x
+        return r3
+
+    def h8(x):
+        dp, r1, r2, r3, r4 = x
+        return r4
+
+    from scipy.optimize import minimize
+
+    constraints = [
+        {'type': 'eq', 'fun': h1},
+        {'type': 'eq', 'fun': h2},
+        {'type': 'eq', 'fun': h3},
+        {'type': 'eq', 'fun': h4},
+        {'type': 'ineq', 'fun': h5},
+        {'type': 'ineq', 'fun': h6},
+        {'type': 'ineq', 'fun': h7},
+        {'type': 'ineq', 'fun': h8},
+    ]
+
+    r = minimize(func, [0.145, 0, 0, 0, 0], constraints=constraints, method='SLSQP', tol=1e-14, options={'maxiter': 10000})
+
+    print(r)
+
+    print(v1.r)
+    print(v2.r)
+    print(fan.input.connector.flow_rate)
+    print(v1.input.connector.flow_rate)
+    print(v2.input.connector.flow_rate)
 
 if __name__ == '__main__':
     run()

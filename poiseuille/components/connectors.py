@@ -11,6 +11,7 @@ class Connector(object):
 
     def connect(self, input, output):
         if input.can_connect(output):
+            self.disconnect()
             self.input = input
             self.output = output
             input.connector = self
@@ -18,6 +19,16 @@ class Connector(object):
             return True
 
         return False
+
+    def disconnect(self):
+        if self.input:
+            self.input.connector = None
+
+        if self.output:
+            self.output.connector = None
+
+        self.input = None
+        self.output = None
 
     def other(self, node):
         if node is self.input:
@@ -30,7 +41,16 @@ class Connector(object):
     def update_properties(self):
         raise NotImplementedError
 
-"""
+class LinearResistanceConnector(Connector):
+    def __init__(self, r=1.):
+        super().__init__(r=r, flow_rate=0.)
+
+    def update_properties(self):
+        pass
+
+    def update_solution(self):
+        self.flow_rate = (self.input.p - self.output.p) / self.r
+
 class PoiseuilleConnector(Connector):
     def __init__(self, r=1., **proerties):
         super(PoiseuilleConnector, self).__init__(r=r, flow_rate=0., **proerties)
@@ -49,4 +69,3 @@ class ProctorAndGambleConnector(PoiseuilleConnector):
     def update_properties(self):
         self.r = sqrt(self.coeff * abs(self.input.p - self.output.p))
         self.flow_rate = (self.input.p - self.output.p) / self.r
-"""

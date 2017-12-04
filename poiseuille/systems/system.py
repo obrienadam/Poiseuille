@@ -59,9 +59,10 @@ class IncompressibleSystem(System):
 
             for connector in self.connectors():
                 connector.update_properties()
+                connector.update_solution()
 
             for block in self.blocks:
-                block.update_properties()
+                block.update_solution()
 
         return iter, np.linalg.norm(A*x - rhs)
 

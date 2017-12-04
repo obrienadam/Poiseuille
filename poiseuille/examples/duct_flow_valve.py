@@ -15,13 +15,13 @@ def run():
     system = IncompressibleSystem([p1, p2, valve])
     system.solve(max_iters=20)
 
-    print valve.flow_rate, valve.output.p - valve.input.p
+    print(valve.flow_rate, valve.output.p - valve.input.p)
 
     for node in system.nodes():
-        print node.p, type(node.block)
+        print(node.p, type(node.block))
 
     for connector in system.connectors():
-        print connector.flow_rate
+        print(connector.flow_rate)
 
 if __name__ == '__main__':
     run()

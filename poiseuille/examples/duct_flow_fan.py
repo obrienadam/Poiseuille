@@ -16,10 +16,10 @@ def run():
     system.solve()
 
     for connector in system.connectors():
-        print connector.flow_rate
+        print(connector.flow_rate)
 
     for node in system.nodes():
-        print node.p, type(node)
+        print(node.p, type(node))
 
 if __name__ == '__main__':
     run()

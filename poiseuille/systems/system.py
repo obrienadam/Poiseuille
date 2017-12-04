@@ -1,6 +1,8 @@
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
+import scipy.optimize as opt
 import numpy as np
+
 
 class System(object):
     def __init__(self, blocks=[]):
@@ -44,24 +46,25 @@ class IncompressibleSystem(System):
         for id, node in enumerate(self.nodes()):
             node.p = soln[id]
 
+        for conn in self.connectors():
+            conn.update_solution()
+
+        for block in self.blocks:
+            block.update_solution()
+
     def solve(self, max_iters=10, toler=1e-10):
-        x = None
-
-        for iter in range(max_iters):
+        def M(x):
             A, rhs = self.linear_system()
+            return spla.spsolve(A, x)
 
-            if x is not None:
-                if np.linalg.norm(A*x - rhs) <= toler:
-                    break
-
-            x = spla.spsolve(A, rhs)
+        def residual(x):
             self.map_solution_to_nodes(x)
+            A, rhs = self.linear_system()
+            return A*x - rhs
 
-            for connector in self.connectors():
-                connector.update_properties()
+        p = np.array([node.p for node in self.nodes()])
+        p = opt.newton_krylov(residual, p, verbose=1, inner_M=spla.LinearOperator((p.shape[0], p.shape[0]), M), f_tol=1e-10)
 
-            for block in self.blocks:
-                block.update_properties()
+        self.map_solution_to_nodes(p)
 
-        return iter, np.linalg.norm(A*x - rhs)
-
+        return iter

@@ -8,7 +8,8 @@ from .block_graphics_item import *
 from .palette import BlockPaletteItem
 
 from poiseuille.systems.system import IncompressibleSystem
-from poiseuille.components.connectors import LinearResistanceConnector, ProctorAndGambleConnector
+from poiseuille.components.connector import Connector
+from poiseuille.components.resistance_functions import Resistance, ProctorAndGambleResistance
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -16,7 +17,7 @@ class MainWindow(QMainWindow):
         uic.loadUi(uifile='designer/mainwindow.ui', baseinstance=self)
 
         view = self.graphics_view
-        scene = GraphicsScene(view, LinearResistanceConnector)
+        scene = GraphicsScene(view)
         view.setScene(scene)
 
         self.init_parameters_tree()
@@ -49,6 +50,9 @@ class MainWindow(QMainWindow):
 
         # Parameter tree
         self.parameters_tree.itemDoubleClicked.connect(self.change_params)
+
+        # Solver parameters
+        self.resistance_combo_box.currentTextChanged.connect(self.change_resistance_type)
 
         # Toolbar
         self.toolBar.actions()[0].triggered.connect(self.run_sim)
@@ -94,11 +98,13 @@ class MainWindow(QMainWindow):
             self.main_tab_widget.addTab(self.fluid_params_widget, 'Fluid Parameters')
             self.main_tab_widget.setCurrentIndex(1)
 
-    def change_connector_type(self, type):
-        if type == 'Linear Resistance Connector':
-            self.ConnectorType = LinearResistanceConnector
-        elif type == 'Proctor and Gamble Connector':
-            self.ConnectorType = ProctorAndGambleConnector
+    def change_resistance_type(self, type):
+        if type == 'Linear':
+            for connector in self.graphics_view.scene().connectors():
+                connector.r_func = Resistance(r=connector.r_func.r)
+        elif type == 'Proctor and Gamble':
+            for connector in self.graphics_view.scene().connectors():
+                connector.r_func = ProctorAndGambleResistance()
         else:
             raise ValueError('Unrecognized connector type "{}".'.format(type))
 
@@ -107,7 +113,7 @@ class MainWindow(QMainWindow):
 
         if blocks:
             system = IncompressibleSystem(blocks)
-            system.solve(verbose=1)
+            system.solve(maxiter=1000, method='lgmres', verbose=1)
         else:
             print('Scene is empty.')
 

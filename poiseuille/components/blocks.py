@@ -178,6 +178,8 @@ class ResistorValve(Block):
     def update_solution(self):
         if self.r != 0.:
             self.flow_rate = (self.input.p - self.output.p) / self.r
+        else:
+            self.flow_rate = self.input.connector.flow_rate
 
 
 class RestrictorValve(ResistorValve):
@@ -229,6 +231,9 @@ class PerfectSplitter(Block):
         eqns.append(self.continuity_equation())
 
         return eqns
+
+    def update_solution(self):
+        pass
 
 
 class PerfectJunction(Block):

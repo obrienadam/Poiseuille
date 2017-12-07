@@ -7,9 +7,8 @@ from .block_graphics_item import NodeGraphicsItem
 from .connector_graphics_path_item import ConnectorGraphicsPathItem
 
 class GraphicsScene(QGraphicsScene):
-    def __init__(self, parent, ConnectorType):
+    def __init__(self, parent):
         super(GraphicsScene, self).__init__(parent=parent)
-        self.ConnectorType = ConnectorType
         self.node = None
         self.connector = None
 
@@ -43,7 +42,7 @@ class GraphicsScene(QGraphicsScene):
 
         if isinstance(item, NodeGraphicsItem) and not item.connector:
             self.node = item
-            self.connector = ConnectorGraphicsPathItem(connector_type=self.ConnectorType)
+            self.connector = ConnectorGraphicsPathItem()
             self.connector.set_path(item.center(), e.scenePos())
             self.addItem(self.connector)
         else:

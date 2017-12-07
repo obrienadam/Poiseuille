@@ -2,7 +2,7 @@ from PyQt5.QtCore import QPointF
 from PyQt5.QtGui import QPainterPath
 from PyQt5.QtWidgets import QGraphicsPathItem, QGraphicsTextItem
 
-from poiseuille.components.connectors import Connector
+from poiseuille.components.connector import Connector
 
 class ConnectorGraphisPathItemLabel(QGraphicsTextItem):
     div = '<span style="background-color: white; border-style: solid; border-width: 1px; border-color: red;">{}</span>'
@@ -13,12 +13,11 @@ class ConnectorGraphisPathItemLabel(QGraphicsTextItem):
         self.setPos(parent.boundingRect().center())
 
 class ConnectorGraphicsPathItem(QGraphicsPathItem):
-    def __init__(self, src_node=None, dest_node=None, connector_type=None):
+    def __init__(self, src_node=None, dest_node=None):
         super(ConnectorGraphicsPathItem, self).__init__()
         self.setFlag(QGraphicsPathItem.ItemIsSelectable)
         self.src_node = src_node
         self.dest_node = dest_node
-        self.connector_type = connector_type
         self.label = None
 
     def set_path(self, pt_A, pt_B):
@@ -41,7 +40,7 @@ class ConnectorGraphicsPathItem(QGraphicsPathItem):
 
     def connect(self, src_node, dest_node):
         if src_node.node.can_connect(dest_node.node):
-            self.connector = self.connector_type() if self.connector_type else Connector()
+            self.connector = Connector()
             self.src_node = src_node
             self.dest_node = dest_node
             self.src_node.connector = self

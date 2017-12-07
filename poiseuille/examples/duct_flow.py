@@ -1,11 +1,12 @@
 from poiseuille.components.blocks import PressureReservoir
-from poiseuille.components.connectors import ProctorAndGambleConnector
+from poiseuille.components.connector import Connector
+from poiseuille.components.resistance_functions import ProctorAndGambleResistance
 from poiseuille.systems.system import IncompressibleSystem
 
 def run():
     p1 = PressureReservoir(p=(1.44+5.6))
     p2 = PressureReservoir(p=0.)
-    c = ProctorAndGambleConnector(d=5, l=100, k_ent=1.42)
+    c = Connector(r_func=ProctorAndGambleResistance(l=50, d=5, k_ent=1.42))
     c.connect(p1.node, p2.node)
 
     system = IncompressibleSystem([p1, p2])

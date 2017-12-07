@@ -2,7 +2,8 @@ from random import random
 
 from scipy import optimize as opt
 from poiseuille.components.blocks import PressureReservoir, ResistorValve, PerfectJunction, Fan
-from poiseuille.components.connectors import ProctorAndGambleConnector, LinearResistanceConnector
+from poiseuille.components.connector import Connector
+from poiseuille.components.resistance_functions import ProctorAndGambleResistance
 from poiseuille.systems.system import IncompressibleSystem
 
 
@@ -11,7 +12,7 @@ def run():
     j = PerfectJunction(num_nodes=5)
     f = [Fan(dp=1), Fan(dp=1), Fan(dp=1)]
     v = [ResistorValve(r=0.), ResistorValve(r=0.)]
-    c = [ProctorAndGambleConnector(d=6, l=25) for i in range(10)]
+    c = [Connector(r_func=ProctorAndGambleResistance(d=6, l=25, k_ent=0)) for i in range(10)]
     #c = [LinearResistanceConnector(r=0.01) for i in range(10)]
 
     c[0].connect(p[0].node, v[0].input)

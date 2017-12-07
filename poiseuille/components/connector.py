@@ -1,8 +1,11 @@
 from math import pi, sqrt
+from .resistance_functions import Resistance
 
 
 class Connector(object):
-    def __init__(self, **properties):
+    def __init__(self, r_func=Resistance(), **properties):
+        self.r_func = r_func
+
         for key, value in properties.items():
             setattr(self, key, value)
 
@@ -42,29 +45,12 @@ class Connector(object):
         raise NotImplementedError
 
     def update_solution(self):
-        raise NotImplementedError
+        self.r_func.update_solution(self.input, self.output)
 
+    @property
+    def r(self):
+        return self.r_func.r
 
-class LinearResistanceConnector(Connector):
-    def __init__(self, r=1.):
-        super().__init__(r=r, flow_rate=0.)
-
-    def update_properties(self):
-        pass
-
-    def update_solution(self):
-        self.flow_rate = (self.input.p - self.output.p) / self.r
-
-
-class ProctorAndGambleConnector(Connector):
-    def __init__(self, l=50., d=6., k_ent=0.):
-        super(ProctorAndGambleConnector, self).__init__(r=1., l=l, d=d, k_ent=k_ent)
-        area = pi * (self.d / 24.) ** 2
-        self.coeff = 2.238 / self.d * (1. / 1000.) ** 2 * (0.1833 + (1. / self.d) ** (1. / 3.)) * self.l / (
-                100. * area ** 2)
-        self.coeff += self.k_ent / (4005 ** 2 * area ** 2)
-        self.flow_rate = 0.
-
-    def update_solution(self):
-        self.r = sqrt(self.coeff * abs(self.input.p - self.output.p)) + 1e-10
-        self.flow_rate = (self.input.p - self.output.p) / self.r
+    @property
+    def flow_rate(self):
+        return self.r_func.flow_rate

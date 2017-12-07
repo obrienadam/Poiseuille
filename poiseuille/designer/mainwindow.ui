@@ -60,12 +60,12 @@
         <item row="0" column="0">
          <widget class="QLabel" name="label">
           <property name="text">
-           <string>Solver</string>
+           <string>System Type</string>
           </property>
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QComboBox" name="comboBox">
+         <widget class="QComboBox" name="system_cobmo_box">
           <item>
            <property name="text">
             <string>Incompressible</string>
@@ -74,51 +74,21 @@
          </widget>
         </item>
         <item row="1" column="0">
-         <widget class="QLabel" name="label_2">
-          <property name="text">
-           <string>Connector Type</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QComboBox" name="comboBox_2">
-          <item>
-           <property name="text">
-            <string>Linear</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Proctor and Gamble</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="2" column="0">
          <widget class="QLabel" name="label_3">
           <property name="text">
            <string>Max Non-linear Iterations</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
-         <widget class="QSpinBox" name="maxiter_spinbox">
-          <property name="accelerated">
-           <bool>true</bool>
-          </property>
-          <property name="minimum">
-           <number>1</number>
-          </property>
-          <property name="maximum">
-           <number>1000</number>
-          </property>
-          <property name="value">
-           <number>100</number>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>Solver Type</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="1">
-         <widget class="QComboBox" name="comboBox_3">
+        <item row="2" column="1">
+         <widget class="QComboBox" name="solver_combo_box">
           <item>
            <property name="text">
             <string>GMRES</string>
@@ -137,9 +107,39 @@
          </widget>
         </item>
         <item row="3" column="0">
-         <widget class="QLabel" name="label_4">
+         <widget class="QLabel" name="label_5">
           <property name="text">
-           <string>Solver Type</string>
+           <string>Resistance Model</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QComboBox" name="resistance_combo_box">
+          <item>
+           <property name="text">
+            <string>Linear</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Proctor and Gamble</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QSpinBox" name="maxiter_spinbox">
+          <property name="accelerated">
+           <bool>true</bool>
+          </property>
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="maximum">
+           <number>1000</number>
+          </property>
+          <property name="value">
+           <number>100</number>
           </property>
          </widget>
         </item>
@@ -149,6 +149,18 @@
        <attribute name="title">
         <string>Fluid Parameters</string>
        </attribute>
+       <layout class="QFormLayout" name="formLayout_2">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>TextLabel</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QDoubleSpinBox" name="doubleSpinBox"/>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>
@@ -2051,7 +2063,7 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>768</width>
+              <width>1158</width>
               <height>68</height>
              </rect>
             </property>

@@ -1,4 +1,4 @@
-from .connectors import Connector
+from .connector import Connector
 
 class Node(object):
     def __init__(self, block, **properties):

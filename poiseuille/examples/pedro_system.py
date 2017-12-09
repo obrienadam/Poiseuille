@@ -67,8 +67,8 @@ def run():
         {'type': 'eq', 'fun': h2},
         {'type': 'ineq', 'fun': h3},
         {'type': 'ineq', 'fun': h4},
-        #{'type': 'ineq', 'fun': h5},
-        #{'type': 'ineq', 'fun': h6},
+        {'type': 'ineq', 'fun': h5},
+        {'type': 'ineq', 'fun': h6},
     ]
 
     print(opt.minimize(obj, [f[0].dp, f[1].dp, f[2].dp, 0, 0], constraints=constr))

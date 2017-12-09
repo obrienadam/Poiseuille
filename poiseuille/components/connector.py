@@ -3,7 +3,8 @@ from .resistance_functions import Resistance
 
 
 class Connector(object):
-    def __init__(self, r_func=Resistance(), **properties):
+    def __init__(self, r_func=Resistance(), name='C', **properties):
+        self.name = name
         self.r_func = r_func
 
         for key, value in properties.items():

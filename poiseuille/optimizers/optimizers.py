@@ -1,18 +1,44 @@
-class Optimizer(object):
+import scipy.optimize as opt
+
+class Optimizer:
     def __init__(self, system=None):
         self.system = system
+        self.variables = []
+        self.constraints = []
 
-    def optimize(self):
-        raise NotImplementedError
+        self.variable_map = {}
 
-class SingleFanOptimizer(Optimizer):
-    def __init__(self, system=None, fan=None, valves=[]):
-        super(SingleFanOptimizer, self).__init__(system=system)
-        self.fan = fan
-        self.valves = valves
+    def clear(self):
+        self.variables.clear()
+        self.constraints.clear()
+        self.variable_map.clear()
 
-    def optimize(self):
-        error = max([abs(valve.flow_rate - valve.max_flow_rate) for valve in self.valves])
-        resistance = min([valve.r for valve in self.valves])
+    def add_variable(self, block, property, name):
+        if not name in self.variable_map:
+            self.variable_map[name] = len(self.variables)
+            self.variables.append({
+                'name': name,
+                'property': property,
+                'block': block
+            })
 
-        
+    def add_inequality_constraint(self, var, value=0.):
+        index = self.variable_map[var]
+        if index:
+            self.constraints.append({
+                'type': 'ineq',
+                'func': lambda x: x[index] - value
+            })
+
+    def get_variable(self, name):
+        return self.variables[name]['value']
+
+    def get_initial_guess(self):
+        return [variable['value'] for variable in self.variables]
+
+    def optimize(self, tol=1e-6):
+        initial = self.get_initial_guess()
+        constraints = self.get_constraints()
+        obj_func = self.get_obj_func()
+
+        opt.minimize(self.obj_func, self.get_initial_guess(), constraints=self.constraints, tol=tol)

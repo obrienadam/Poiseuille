@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1200</width>
-    <height>800</height>
+    <height>805</height>
    </rect>
   </property>
   <property name="acceptDrops">
@@ -24,7 +24,7 @@
        <bool>false</bool>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="tabsClosable">
        <bool>false</bool>
@@ -162,6 +162,24 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="optimizer_tab">
+       <attribute name="title">
+        <string>Optimizer</string>
+       </attribute>
+       <widget class="QPushButton" name="new_variable_push_button">
+        <property name="geometry">
+         <rect>
+          <x>22</x>
+          <y>40</y>
+          <width>241</width>
+          <height>111</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>New Variable</string>
+        </property>
+       </widget>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -242,6 +260,11 @@
         <item>
          <property name="text">
           <string>Fluid Properties</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Optimizer</string>
          </property>
         </item>
        </item>

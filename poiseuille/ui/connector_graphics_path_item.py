@@ -3,6 +3,7 @@ from PyQt5.QtGui import QPainterPath
 from PyQt5.QtWidgets import QGraphicsPathItem, QGraphicsTextItem
 
 from poiseuille.components.connector import Connector
+from poiseuille.ui.dialog import ConnectorDialog
 
 class ConnectorGraphisPathItemLabel(QGraphicsTextItem):
     div = '<span style="background-color: white; border-style: solid; border-width: 1px; border-color: red;">{}</span>'
@@ -60,3 +61,9 @@ class ConnectorGraphicsPathItem(QGraphicsPathItem):
             self.src_node = None
             self.dest_node = None
             self.scene().removeItem(self)
+
+    def mouseDoubleClickEvent(self, e):
+        dialog = ConnectorDialog(self.connector)
+
+        if dialog.exec() == ConnectorDialog.Accepted:
+            self.connector.r_func.update_properties(**dialog.properties())

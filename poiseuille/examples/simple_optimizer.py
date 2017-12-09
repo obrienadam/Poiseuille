@@ -27,11 +27,11 @@ def run():
     # iters, error = system.solve(max_iters=200, toler=1e-9)
 
     def obj(x):
-        return x[0]
+        return x[0]**2
 
     def h1(x):
         callback(x)
-        return valves[0].input.connector.flow_rate - 500
+        return valves[0].input.connector.flow_rate - 300
 
     def h2(x):
         callback(x)
@@ -39,7 +39,7 @@ def run():
 
     def h3(x):
         callback(x)
-        return valves[2].input.connector.flow_rate - 300
+        return valves[2].input.connector.flow_rate - 600
 
     def h4(x):
         return x[1]
@@ -56,7 +56,7 @@ def run():
         valves[0].r = r1
         valves[1].r = r2
         valves[2].r = r3
-        system.solve(verbose=1, method='lgmres', maxiter=5000, toler=1e-6)
+        system.solve(verbose=1, method='lgmres', maxiter=5000, toler=1e-11)
 
     constr = [
         {'type': 'eq', 'fun': h1},
@@ -68,7 +68,7 @@ def run():
     ]
 
     try:
-        print(opt.minimize(obj, [5, .01, .01, .01], constraints=constr))
+        print(opt.minimize(obj, [5, .0, .0, .0], constraints=constr))
     except:
         pass
 

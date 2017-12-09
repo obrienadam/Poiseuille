@@ -6,6 +6,22 @@ class Resistance:
         self.r = r
         self.flow_rate = 0.
 
+    def type(self):
+        return 'Linear Resistance'
+
+    def properties(self):
+        return {
+            'Resistance': self.r
+        }
+
+    def solution(self):
+        return {
+            'Flow rate': self.flow_rate
+        }
+
+    def update_properties(self, **properties):
+        self.r = properties.get('Resistance', self.r)
+
     def update_solution(self, input, output):
         self.flow_rate = (input.p - output.p) / self.r
 
@@ -17,6 +33,22 @@ class ProctorAndGambleResistance(Resistance):
         self.d = d
         self.k_ent = k_ent
         self.update_properties()
+
+    def type(self):
+        return 'Procter and Gamble Resistance'
+
+    def properties(self):
+        return {
+            'Length': self.l,
+            'Diameter': self.d,
+            'Entrance coefficient': self.k_ent
+        }
+
+    def solution(self):
+        return {
+            'Flow rate': self.flow_rate,
+            'Resistance': self.r
+        }
 
     def update_properties(self, **properties):
         self.l = properties.get('Length', self.l)

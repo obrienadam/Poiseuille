@@ -1,6 +1,4 @@
-from .connector import Connector
-
-class Node(object):
+class Node:
     def __init__(self, block, **properties):
         for key, value in properties.items():
             setattr(self, key, value)
@@ -8,14 +6,6 @@ class Node(object):
         self.block = block
         self.id = None
         self.connector = None
-
-    def connect(self, node):
-        if self.can_connect(node):
-            self.disconnect()
-            node.disconnect()
-            self.connector = Connector()
-            self.connector.connect(self, node)
-            return self.connector
 
     def disconnect(self):
         if self.connector:

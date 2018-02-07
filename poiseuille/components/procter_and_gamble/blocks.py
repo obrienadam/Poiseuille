@@ -1,49 +1,6 @@
-from ..components.nodes import Node, Input, Output
-from ..components.equation import Equation, Term
-
-
-class Block(object):
-    def __init__(self, name='Block'):
-        self.name = name
-        self.nodes = []
-
-    def add_nodes(self, *nodes):
-        self.nodes.extend(nodes)
-
-    def continuity_equation(self):
-        conn_resistances = [node.connector.r for node in self.nodes]
-        conn_nodes = [node.connector.other(node) for node in self.nodes]
-        return Equation(
-            [Term(node, 1. / r) for node, r in zip(conn_nodes, conn_resistances)]
-            + [Term(node, -1. / r) for node, r in zip(self.nodes, conn_resistances)],
-            rhs=0.
-        )
-
-    def disconnect(self):
-        for node in self.nodes:
-            node.disconnect()
-
-    def type(self):
-        return 'Block'
-
-    def properties(self):
-        raise NotImplementedError('Properties not defined for block type.')
-
-    def solution(self):
-        raise NotImplementedError('Solution not defined for block type')
-
-    def equations(self):
-        raise NotImplementedError('Equations not defined for block type.')
-
-    def update_properties(self, **kwargs):
-        raise NotImplementedError('Update properties not implemented for block type "{}".'.format(self.type()))
-
-    def update_solution(self, **kwargs):
-        raise NotImplementedError('Update solution is not implemented for this block type "{}".'.format(self.type()))
-
-    def update_solution(self):
-        raise NotImplementedError('Update solution not implemented for this block type.')
-
+from poiseuille.components.base.blocks import Block
+from poiseuille.components.base.nodes import Node, Input, Output
+from poiseuille.equation.equation import Equation, Term
 
 class PressureReservoir(Block):
     def __init__(self, p=0.):

@@ -1,5 +1,5 @@
-from poiseuille.components.blocks import PressureReservoir, Fan, PerfectSplitter
-from poiseuille.components.connector import Connector
+from poiseuille.components.procter_and_gamble.blocks import PressureReservoir, Fan, PerfectSplitter
+from poiseuille.components.procter_and_gamble.connector import Connector
 from poiseuille.components.resistance_functions import ProctorAndGambleResistance
 from poiseuille.systems.system import IncompressibleSystem
 

@@ -1,9 +1,8 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-from poiseuille.components.blocks import *
+from poiseuille.components.procter_and_gamble.blocks import *
 
 from .dialog import BlockDialog
-from .connector_graphics_path_item import ConnectorGraphicsPathItem
 
 
 class NodeGraphicsItem(QtWidgets.QGraphicsEllipseItem):

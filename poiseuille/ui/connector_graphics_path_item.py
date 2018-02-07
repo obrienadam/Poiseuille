@@ -2,7 +2,7 @@ from PyQt5.QtCore import QPointF
 from PyQt5.QtGui import QPainterPath
 from PyQt5.QtWidgets import QGraphicsPathItem, QGraphicsTextItem
 
-from poiseuille.components.connector import Connector
+from poiseuille.components.procter_and_gamble.connector import ProcterAndGambleConnector
 from poiseuille.ui.dialog import ConnectorDialog
 
 class ConnectorGraphisPathItemLabel(QGraphicsTextItem):
@@ -41,14 +41,14 @@ class ConnectorGraphicsPathItem(QGraphicsPathItem):
 
     def connect(self, src_node, dest_node):
         if src_node.node.can_connect(dest_node.node):
-            self.connector = Connector()
+            self.connector = ProcterAndGambleConnector()
             self.src_node = src_node
             self.dest_node = dest_node
             self.src_node.connector = self
             self.dest_node.connector = self
             self.connector.connect(self.src_node.node, self.dest_node.node)
             self.set_path(self.src_node.center(), self.dest_node.center())
-            self.label = ConnectorGraphisPathItemLabel(self, 'C')
+            self.label = ConnectorGraphisPathItemLabel(self, self.connector.name)
             return True
 
         return False
@@ -66,4 +66,4 @@ class ConnectorGraphicsPathItem(QGraphicsPathItem):
         dialog = ConnectorDialog(self.connector)
 
         if dialog.exec() == ConnectorDialog.Accepted:
-            self.connector.r_func.update_properties(**dialog.properties())
+            self.connector.update_properties(**dialog.properties())

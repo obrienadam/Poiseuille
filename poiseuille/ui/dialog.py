@@ -40,12 +40,12 @@ class ConnectorDialog(QDialog):
         self.connector = connector
         self.property_dict = {}
 
-        self.setWindowTitle('{}: {}'.format(self.connector.r_func.type(), self.connector.name))
+        self.setWindowTitle('{}: {}'.format(self.connector.type(), self.connector.name))
 
         property_layout = self.property_box.layout()
         solution_layout = self.solution_box.layout()
 
-        for key, value in self.connector.r_func.properties().items():
+        for key, value in self.connector.properties().items():
             spin_box = QDoubleSpinBox()
             spin_box.setValue(value)
             spin_box.setDecimals(2)
@@ -55,7 +55,7 @@ class ConnectorDialog(QDialog):
             property_layout.addRow(QLabel(key), spin_box)
             self.property_dict[key] = spin_box
 
-        for key, value in self.connector.r_func.solution().items():
+        for key, value in self.connector.solution().items():
             solution_layout.addWidget(QLabel('{} = {}'.format(key, value)))
 
     def properties(self):

@@ -1,6 +1,6 @@
 import pickle
 
-from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QAction, QToolBar, QTreeWidget
+from PyQt5.QtWidgets import QMainWindow, QHBoxLayout
 from PyQt5 import uic
 
 from .graphics_scene import GraphicsScene
@@ -10,8 +10,6 @@ from .dialog import VariableDefinitionDialog
 
 from poiseuille.systems.system import IncompressibleSystem
 from poiseuille.optimizers.optimizers import Optimizer
-from poiseuille.components.connector import Connector
-from poiseuille.components.resistance_functions import Resistance, ProctorAndGambleResistance
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -59,7 +57,7 @@ class MainWindow(QMainWindow):
         self.parameters_tree.itemDoubleClicked.connect(self.change_params)
 
         # Solver parameters
-        self.resistance_combo_box.currentTextChanged.connect(self.change_resistance_type)
+        #self.resistance_combo_box.currentTextChanged.connect(self.change_resistance_type)
 
         # Optimizer parameters
         self.new_variable_push_button.pressed.connect(self.create_optimizer_variable)
@@ -109,16 +107,6 @@ class MainWindow(QMainWindow):
         elif item is self.optimizer_params:
             self.main_tab_widget.addTab(self.optimizer_params_widget, 'Optimizer Parameters')
             self.main_tab_widget.setCurrentIndex(1)
-
-    def change_resistance_type(self, type):
-        if type == 'Linear':
-            for connector in self.graphics_view.scene().connectors():
-                connector.r_func = Resistance(r=connector.r_func.r)
-        elif type == 'Proctor and Gamble':
-            for connector in self.graphics_view.scene().connectors():
-                connector.r_func = ProctorAndGambleResistance()
-        else:
-            raise ValueError('Unrecognized connector type "{}".'.format(type))
 
     def run_sim(self):
         blocks = self.graphics_view.scene().blocks()

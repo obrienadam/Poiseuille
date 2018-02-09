@@ -24,7 +24,7 @@
        <bool>false</bool>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <property name="tabsClosable">
        <bool>false</bool>
@@ -166,19 +166,42 @@
        <attribute name="title">
         <string>Optimizer</string>
        </attribute>
-       <widget class="QPushButton" name="new_variable_push_button">
-        <property name="geometry">
-         <rect>
-          <x>22</x>
-          <y>40</y>
-          <width>241</width>
-          <height>111</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>New Variable</string>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="horizontalLayout_11">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_12">
+          <item>
+           <widget class="QGroupBox" name="groupBox_2">
+            <property name="title">
+             <string>Objectives</string>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_2">
+             <item>
+              <widget class="QListWidget" name="listWidget_2"/>
+             </item>
+             <item>
+              <layout class="QVBoxLayout" name="verticalLayout_5">
+               <item>
+                <widget class="QComboBox" name="comboBox">
+                 <item>
+                  <property name="text">
+                   <string>Sum of Squares</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Absolute Sum</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>
@@ -231,6 +254,8 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionRun"/>
+   <addaction name="separator"/>
+   <addaction name="actionRun_Optimizer"/>
   </widget>
   <widget class="QDockWidget" name="parameters_dock_widget">
    <property name="windowTitle">
@@ -2140,6 +2165,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="actionRun_Optimizer">
+   <property name="text">
+    <string>Run Optimizer</string>
    </property>
   </action>
  </widget>

@@ -9,6 +9,9 @@ class Node(object):
         self.id = None
         self.connector = None
 
+    def type(self):
+        return 'Node'
+
     def connect(self, node):
         if self.can_connect(node):
             self.disconnect()
@@ -26,10 +29,16 @@ class Node(object):
 
 
 class Input(Node):
+    def type(self):
+        return 'Input'
+
     def can_connect(self, node):
         return not isinstance(node, Input) and super(Input, self).can_connect(node)
 
 
 class Output(Node):
+    def type(self):
+        return 'Output'
+
     def can_connect(self, node):
         return not isinstance(node, Output) and super(Output, self).can_connect(node)

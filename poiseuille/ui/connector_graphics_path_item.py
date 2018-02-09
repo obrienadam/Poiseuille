@@ -39,6 +39,15 @@ class ConnectorGraphicsPathItem(QGraphicsPathItem):
         if self.src_node and self.dest_node:
             self.set_path(self.src_node.center(), self.dest_node.center())
 
+    def init(self, src_node, dest_node, connector):
+        self.connector = connector
+        self.src_node = src_node
+        self.dest_node = dest_node
+        self.src_node.connector = self
+        self.dest_node.connector = self
+        self.update_path()
+        self.label = self.connector.name
+
     def connect(self, src_node, dest_node):
         if src_node.node.can_connect(dest_node.node):
             self.connector = Connector()

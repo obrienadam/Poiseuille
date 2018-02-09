@@ -3,12 +3,9 @@ from .resistance_functions import Resistance
 
 
 class Connector(object):
-    def __init__(self, r_func=Resistance(), name='C', **properties):
+    def __init__(self, r_func=None, name='C'):
         self.name = name
-        self.r_func = r_func
-
-        for key, value in properties.items():
-            setattr(self, key, value)
+        self.r_func = r_func if r_func else Resistance(r=0.01)
 
         self.input = None
         self.output = None
@@ -55,3 +52,7 @@ class Connector(object):
     @property
     def flow_rate(self):
         return self.r_func.flow_rate
+
+    @property
+    def velocity_pressure(self):
+        return self.r_func.velocity_pressure

@@ -7,8 +7,10 @@ from .block_graphics_item import NodeGraphicsItem
 from .connector_graphics_path_item import ConnectorGraphicsPathItem
 
 class GraphicsScene(QGraphicsScene):
-    def __init__(self, parent):
-        super(GraphicsScene, self).__init__(parent=parent)
+    def __init__(self, parent, block_list=None, connector_list=None):
+        super().__init__(parent=parent)
+        self.block_list = block_list
+        self.connector_list = connector_list
         self.node = None
         self.connector = None
 
@@ -27,6 +29,36 @@ class GraphicsScene(QGraphicsScene):
     def num_connectors(self):
         return sum(isinstance(item, ConnectorGraphicsPathItem) for item in self.items())
 
+    def load(self, blocks, positions):
+        self.clear()
+
+        for block, pos in zip(blocks, positions):
+            item = construct_block(block.type(), block)
+            item.setPos(*pos)
+            self.addItem(item)
+
+        # Get map of nodes to their graphic items
+        node_to_graphics_item = {}
+
+        for block in self.blockGraphicsItems():
+            for node in block.nodes:
+                node_to_graphics_item[node.node] = node
+
+        # Construct connector list
+        connectors = []
+
+        for block in blocks:
+            for node in block.nodes:
+                conn = node.connector
+
+                if conn and not conn in connectors:
+                    src = node_to_graphics_item[conn.input]
+                    dest = node_to_graphics_item[conn.output]
+                    item = ConnectorGraphicsPathItem()
+                    item.init(src, dest, conn)
+                    self.addItem(item)
+                    connectors.append(conn)
+
     def dragMoveEvent(self, e):
         e.accept()
 
@@ -35,6 +67,10 @@ class GraphicsScene(QGraphicsScene):
         block = construct_block(e.mimeData().text())
         block.setPos(e.scenePos())
         self.addItem(block)
+
+        if self.block_list:
+            pass
+
         block.mouseDoubleClickEvent(None)
 
     def mousePressEvent(self, e):
@@ -61,6 +97,9 @@ class GraphicsScene(QGraphicsScene):
 
             for item in self.items(e.scenePos()):
                 if isinstance(item, NodeGraphicsItem) and self.connector.connect(self.node, item):
+                    if self.connector_list:
+                        pass
+
                     self.connector = None
                     return
 

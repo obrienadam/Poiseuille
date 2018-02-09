@@ -2,13 +2,16 @@ from ..components.nodes import Node, Input, Output
 from ..components.equation import Equation, Term
 
 
-class Block(object):
+class Block:
     def __init__(self, name='Block'):
         self.name = name
         self.nodes = []
 
     def add_nodes(self, *nodes):
         self.nodes.extend(nodes)
+
+    def all_nodes_connected(self):
+        return not any(node.connector is None for node in self.nodes)
 
     def continuity_equation(self):
         conn_resistances = [node.connector.r for node in self.nodes]
@@ -88,7 +91,7 @@ class Fan(Block):
         return {'Pressure differential': self.dp}
 
     def solution(self):
-        return {'Flow rate': self.flow_rate, 'Power': self.power}
+        return {'Flow rate': self.flow_rate}
 
     def equations(self):
         return [Equation([Term(self.input, -1.), Term(self.output, 1.)], self.dp), self.continuity_equation()]
@@ -97,7 +100,7 @@ class Fan(Block):
         self.dp = kwargs.get('Pressure differential', self.dp)
 
     def update_solution(self):
-        pass
+        self.flow_rate = self.input.connector.flow_rate
 
 
 class ConstantDeliveryFan(Block):
@@ -119,8 +122,8 @@ class ConstantDeliveryFan(Block):
         return {'Pressure differential': self.dp}
 
     def equations(self):
-        r = self.input.connector.r + self.output.connector.r
-        eqn = Equation([Term(self.input, -1. / r), Term(self.output, 1. / r)], self.flow_rate)
+        r = self.input.connector.r
+        eqn = Equation([Term(self.input.connector.other(self.input), 1. / r), Term(self.input, -1. / r)], rhs=self.flow_rate)
         return [eqn, self.continuity_equation()]
 
     def update_properties(self, **kwargs):
@@ -251,4 +254,65 @@ class PerfectJunction(Block):
         return eqns
 
     def update_solution(self):
+        pass
+
+class Joiner(Block):
+    def __init__(self, k_regain=0.6, k_loss=1):
+        super().__init__(name='Joiner')
+        self.k_regain = k_regain
+        self.k_loss = k_loss
+        self.input_1 = Input(self, p=0)
+        self.input_2 = Input(self, p=0)
+        self.output = Output(self, p=0)
+        self.add_nodes(self.input_1, self.input_2, self.output)
+
+    def type(self):
+        return 'Joiner'
+
+    def properties(self):
+        return {
+            'Regain coefficient': self.k_regain,
+            'Loss coefficient': self.k_loss
+        }
+
+    def solution(self):
+        if self.all_nodes_connected():
+            vp_1 = self.input_1.connector.velocity_pressure
+            vp_2 = self.input_2.connector.velocity_pressure
+            vp_3 = self.output.connector.velocity_pressure
+        else:
+            vp_1 = vp_2 = vp_3 = 0.
+
+        return {
+            'Line 1 regain': vp_1 - vp_3 > 0,
+            'Line 2 regain': vp_2 - vp_3 > 0
+        }
+
+    def equations(self):
+        vp_1 = self.input_1.connector.velocity_pressure
+        vp_2 = self.input_2.connector.velocity_pressure
+        vp_3 = self.output.connector.velocity_pressure
+
+        eqn1 = Equation([Term(self.output, 1), Term(self.input_1, -1)])
+        eqn2 = Equation([Term(self.output, 1), Term(self.input_2, -1)])
+
+        if vp_1 - vp_3 > 0:
+            eqn1.rhs = self.k_regain * (vp_1 - vp_3)
+        else:
+            eqn1.rhs = self.k_loss * (vp_1 - vp_3)
+
+        if vp_2 - vp_3 > 0:
+            eqn2.rhs = self.k_regain * (vp_2 - vp_3)
+        else:
+            eqn2.rhs = self.k_loss * (vp_2 - vp_3)
+
+        #eqn1 = Equation([Term(self.input_1, 1), Term(self.output, -1)])
+        #eqn2 = Equation([Term(self.input_2, 1), Term(self.output, -1)])
+        return [self.continuity_equation(), eqn1, eqn2]
+
+    def update_properties(self, **kwargs):
+        self.k_regain = kwargs.get('Regain coefficient', self.k_regain)
+        self.k_loss = kwargs.get('Loss coefficient', self.k_loss)
+
+    def update_solution(self, **kwargs):
         pass

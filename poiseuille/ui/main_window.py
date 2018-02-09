@@ -1,6 +1,6 @@
 import pickle
 
-from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QAction, QToolBar, QTreeWidget
+from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QAction, QToolBar, QTreeWidget, QFileDialog
 from PyQt5 import uic
 
 from .graphics_scene import GraphicsScene
@@ -15,7 +15,7 @@ from poiseuille.components.resistance_functions import Resistance, ProctorAndGam
 
 class MainWindow(QMainWindow):
     def __init__(self):
-        super(MainWindow, self).__init__()
+        super().__init__()
         uic.loadUi(uifile='designer/mainwindow.ui', baseinstance=self)
 
         view = self.graphics_view
@@ -29,6 +29,7 @@ class MainWindow(QMainWindow):
         self.init_palettes()
         self.init_actions()
         self.loaded_case = None
+        self.saved = True
         self.show()
 
     def init_parameters_tree(self):
@@ -43,11 +44,14 @@ class MainWindow(QMainWindow):
         self.palette_power.layout().addWidget(BlockPaletteItem(block=FanGraphicsItem))
         self.palette_power.layout().addWidget(BlockPaletteItem(block=ConstFlowFanGraphicsItem))
         self.palette_valves.layout().addWidget(BlockPaletteItem(block=RestrictorValveGraphicsItem))
+        self.palette_valves.layout().addWidget(BlockPaletteItem(block=JoinerGraphicsItem))
 
     def init_actions(self):
         self.solver_params = self.parameters_tree.topLevelItem(0).child(0)
         self.fluid_params = self.parameters_tree.topLevelItem(0).child(1)
         self.optimizer_params = self.parameters_tree.topLevelItem(0).child(2)
+        self.block_list = self.parameters_tree.topLevelItem(0).child(3)
+        self.connector_list = self.parameters_tree.topLevelItem(0).child(4)
         self.solver_params_widget = self.main_tab_widget.widget(1)
         self.fluid_params_widget = self.main_tab_widget.widget(2)
         self.optimizer_params_widget = self.main_tab_widget.widget(3)
@@ -62,10 +66,11 @@ class MainWindow(QMainWindow):
         self.resistance_combo_box.currentTextChanged.connect(self.change_resistance_type)
 
         # Optimizer parameters
-        self.new_variable_push_button.pressed.connect(self.create_optimizer_variable)
+        #self.new_variable_push_button.pressed.connect(self.create_optimizer_variable)
 
         # Toolbar
         self.toolBar.actions()[0].triggered.connect(self.run_sim)
+        self.toolBar.actions()[2].triggered.connect(self.run_optimizer)
 
         # Menu
         actions = self.menuFile.actions()
@@ -75,26 +80,48 @@ class MainWindow(QMainWindow):
         actions[3].triggered.connect(self.on_actionSaveAs)
 
     def on_actionNew(self):
-        pass
+        if not self.saved:
+            pass
+
+
 
     def on_actionOpen(self):
-        with open('case.poi', 'rb') as f:
-            items = pickle.load(f)
-            for item, pos in items:
-                print(item, pos)
+        if not self.saved:
+            pass
+
+        dialog = QFileDialog()
+        if dialog.exec():
+            with open(dialog.selectedFiles()[0], 'rb') as f:
+                try:
+                    data = pickle.load(f)
+                    self.graphics_view.scene().load(data['blocks'], data['positions'])
+                    self.loaded_case = f.name
+                except pickle.UnpicklingError as e:
+                    print('Error loading file "{}". File may be corrupted.'.format(f.name))
 
     def on_actionSave(self):
         if not self.loaded_case:
             self.on_actionSaveAs()
-            return
 
-        with open('case.poi', 'wb') as f:
-            items = [(item.block, (item.pos().x(), item.pos().y())) for item in self.graphics_view.scene().blockGraphicsItems()]
-            pickle.dump(items, f)
+        with open(self.loaded_case, 'wb') as f:
+            data = {
+                'blocks': self.graphics_view.scene().blocks(),
+                'positions': [(item.scenePos().x(), item.scenePos().y()) for item in
+                              self.graphics_view.scene().blockGraphicsItems()],
+                'solver_params': {},
+                'optimizer_params': {},
+            }
+
+            pickle.dump(data, f)
 
     def on_actionSaveAs(self):
-        self.loaded_case = 'test.poi'
-        self.on_actionSave()
+        dialog = QFileDialog()
+        dialog.setAcceptMode(QFileDialog.AcceptSave)
+
+        if dialog.exec():
+            with open(dialog.selectedFiles()[0], 'wb') as f:
+                self.loaded_case = f.name
+
 
     def change_params(self, item):
         if self.main_tab_widget.widget(1):
@@ -125,12 +152,12 @@ class MainWindow(QMainWindow):
 
         if blocks:
             system = IncompressibleSystem(blocks)
-            system.solve(maxiter=1000, method='lgmres', verbose=1)
+            system.solve(maxiter=5000, method='lgmres', verbose=1)
         else:
             print('Scene is empty.')
 
     def run_optimizer(self):
-        pass
+        print('Running optimizer!')
 
     def create_optimizer_variable(self):
         dialog = VariableDefinitionDialog(blocks=self.graphics_view.scene().blocks())

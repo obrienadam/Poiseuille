@@ -63,12 +63,14 @@ class BlockGraphicsItem(QtWidgets.QGraphicsPixmapItem):
         if dialog.exec() == BlockDialog.Accepted:
             self.block.update_properties(**dialog.properties())
 
-    def mouseMoveEvent(self, QGraphicsSceneMouseEvent):
-        super(BlockGraphicsItem, self).mouseMoveEvent(QGraphicsSceneMouseEvent)
+    def mouseMoveEvent(self, e):
+        super().mouseMoveEvent(e)
 
-        for node in self.nodes:
-            if node.connector:
-                node.connector.update_path()
+        for item in self.scene().selectedItems():
+            if isinstance(item, BlockGraphicsItem):
+                for node in item.nodes:
+                    if node.connector:
+                        node.connector.update_path()
 
 
 class PressureReservoirGraphicsItem(BlockGraphicsItem):
@@ -98,7 +100,7 @@ class ConstFlowFanGraphicsItem(BlockGraphicsItem):
 
 
 class RestrictorValveGraphicsItem(BlockGraphicsItem):
-    def __init__(self, block=RestrictorValve()):
+    def __init__(self, block=ResistorValve()):
         super(RestrictorValveGraphicsItem, self).__init__(block=block, file='resources/valve')
 
     def init_nodes(self):
@@ -106,14 +108,27 @@ class RestrictorValveGraphicsItem(BlockGraphicsItem):
         self.nodes.append(NodeGraphicsItem(self.block.output, self, x=47.5, y=17.5))
 
 
-def construct_block(type):
+class JoinerGraphicsItem(BlockGraphicsItem):
+    def __init__(self, block=Joiner()):
+        super().__init__(block=block, file='resources/joiner')
+
+    def init_nodes(self):
+        self.nodes.append(NodeGraphicsItem(self.block.input_1, self, x=-7.5, y=54))
+        self.nodes.append(NodeGraphicsItem(self.block.input_2, self, x=-7.5, y=0))
+        self.nodes.append(NodeGraphicsItem(self.block.output, self, x=58, y=26.5))
+
+
+def construct_block(type, block=None):
     if type == 'Pressure Reservoir':
-        return PressureReservoirGraphicsItem(block=PressureReservoir())
+        return PressureReservoirGraphicsItem(block=PressureReservoir() if not block else block)
     elif type == 'Fan':
-        return FanGraphicsItem(block=Fan())
+        return FanGraphicsItem(block=Fan() if not block else block)
     elif type == 'Constant Delivery Fan':
-        return ConstFlowFanGraphicsItem(block=ConstantDeliveryFan())
-    elif type == 'Restrictor Valve':
-        return RestrictorValveGraphicsItem(block=RestrictorValve())
+        return ConstFlowFanGraphicsItem(block=ConstantDeliveryFan() if not  block else block)
+    elif type == 'Resistor Valve':
+        return RestrictorValveGraphicsItem(block=ResistorValve() if not block else block)
+    elif type == 'Joiner':
+        return JoinerGraphicsItem(block=Joiner() if not block else block)
     else:
         raise ValueError('Unrecognized block type "{}".'.format(type))
+

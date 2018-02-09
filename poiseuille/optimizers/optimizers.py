@@ -1,6 +1,20 @@
 import scipy.optimize as opt
 
 class Optimizer:
+    class Variable:
+        def __init__(self, block, attr, alias=None):
+            self.block = block
+            self.attr = attr
+            self.alias = alias
+
+        @property
+        def value(self):
+            return getattr(self.block, self.attr)
+
+        @value.setter
+        def value(self, value):
+            setattr(self.block, self.attr, value)
+
     def __init__(self, system=None):
         self.system = system
         self.variables = []

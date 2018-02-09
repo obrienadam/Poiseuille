@@ -1,12 +1,16 @@
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 import scipy.optimize as opt
+from scipy.optimize.nonlin import NoConvergence
 import numpy as np
 
 
 class System(object):
     def __init__(self, blocks=[]):
         self.blocks = blocks
+
+    def get_unconnected_nodes(self):
+        return [node for node in self.nodes() if not node.connector]
 
     def assign_node_ids(self):
         for id, node in enumerate(self.nodes()):
@@ -67,7 +71,7 @@ class IncompressibleSystem(System):
         for block in self.blocks:
             block.update_solution()
 
-    def solve(self, maxiter=1000, toler=1e-10, verbose=0, method='gmres'):
+    def solve(self, maxiter=2000, toler=1e-10, verbose=0, method='lgmres'):
         def residual(x):
             self.map_solution_to_nodes(x)
             A, rhs = self.matrix(), self.rhs()
@@ -77,7 +81,7 @@ class IncompressibleSystem(System):
         try:
             p = opt.newton_krylov(residual, np.array([node.p for node in self.nodes()]), verbose=verbose,
                                   inner_M=inner_M, f_tol=toler, method=method, maxiter=maxiter)
-        except:  # If iterations fail, restart using zeros
+        except NoConvergence as e:  # If iterations fail, restart using zeros
             p = opt.newton_krylov(residual, np.zeros(len(self.nodes())), verbose=verbose,
                                   inner_M=inner_M, f_tol=toler, method=method, maxiter=maxiter)
 

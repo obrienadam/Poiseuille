@@ -13,6 +13,7 @@ class BlockDialog(QDialog):
 
         property_layout = self.property_box.layout()
         solution_layout = self.solution_box.layout()
+        node_pressure_layout = self.node_pressure_box.layout()
 
         for key, value in self.block.properties().items():
             spin_box = QDoubleSpinBox()
@@ -26,6 +27,9 @@ class BlockDialog(QDialog):
 
         for key, value in self.block.solution().items():
             solution_layout.addWidget(QLabel('{} = {}'.format(key, value)))
+
+        for node in self.block.nodes:
+            node_pressure_layout.addWidget(QLabel('{} ({}) = {}'.format(node.id, node.type(), node.p)))
 
     def properties(self):
         return {
@@ -56,7 +60,10 @@ class ConnectorDialog(QDialog):
             self.property_dict[key] = spin_box
 
         for key, value in self.connector.r_func.solution().items():
-            solution_layout.addWidget(QLabel('{} = {}'.format(key, value)))
+            if value > 1e-1:
+                solution_layout.addWidget(QLabel('{} = {:.2f}'.format(key, value)))
+            else:
+                solution_layout.addWidget(QLabel('{} = {:.2e}'.format(key, value)))
 
     def properties(self):
         return {

@@ -31,6 +31,14 @@
     </widget>
    </item>
    <item>
+    <widget class="QGroupBox" name="node_pressure_box">
+     <property name="title">
+      <string>Node Pressures</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_3"/>
+    </widget>
+   </item>
+   <item>
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>

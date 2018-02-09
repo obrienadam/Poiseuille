@@ -60,7 +60,7 @@ def run():
         f[2].dp = x[2]
         v[0].r = x[3]
         v[1].r = x[4]
-        system.solve(verbose=1, method='gmres', maxiter=1000)
+        system.solve(verbose=1, method='lgmres', maxiter=1000)
 
     constr = [
         {'type': 'eq', 'fun': h1},

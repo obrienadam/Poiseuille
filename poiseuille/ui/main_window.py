@@ -1,17 +1,15 @@
 import pickle
 
-from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QAction, QToolBar, QTreeWidget, QFileDialog
+from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QFileDialog
 from PyQt5 import uic
 
 from .graphics_scene import GraphicsScene
-from .block_graphics_item import *
+from ..ui import procter_and_gamble
 from .palette import BlockPaletteItem
 from .dialog import VariableDefinitionDialog
 
 from poiseuille.systems.system import IncompressibleSystem
 from poiseuille.optimizers.optimizers import Optimizer
-from poiseuille.components.connector import Connector
-from poiseuille.components.resistance_functions import Resistance, ProctorAndGambleResistance
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -40,11 +38,11 @@ class MainWindow(QMainWindow):
         self.palette_power.setLayout(QHBoxLayout())
         self.palette_valves.setLayout(QHBoxLayout())
 
-        self.palette_env.layout().addWidget(BlockPaletteItem(block=PressureReservoirGraphicsItem))
-        self.palette_power.layout().addWidget(BlockPaletteItem(block=FanGraphicsItem))
-        self.palette_power.layout().addWidget(BlockPaletteItem(block=ConstFlowFanGraphicsItem))
-        self.palette_valves.layout().addWidget(BlockPaletteItem(block=RestrictorValveGraphicsItem))
-        self.palette_valves.layout().addWidget(BlockPaletteItem(block=JoinerGraphicsItem))
+        self.palette_env.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.PressureReservoirGraphicsItem))
+        self.palette_power.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.FanGraphicsItem))
+        self.palette_power.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.ConstDeliveryFanGraphicsItem))
+        self.palette_valves.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.RestrictorValveGraphicsItem))
+        self.palette_valves.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.JoinerGraphicsItem))
 
     def init_actions(self):
         self.solver_params = self.parameters_tree.topLevelItem(0).child(0)
@@ -63,7 +61,7 @@ class MainWindow(QMainWindow):
         self.parameters_tree.itemDoubleClicked.connect(self.change_params)
 
         # Solver parameters
-        self.resistance_combo_box.currentTextChanged.connect(self.change_resistance_type)
+        #self.resistance_combo_box.currentTextChanged.connect(self.change_resistance_type)
 
         # Optimizer parameters
         #self.new_variable_push_button.pressed.connect(self.create_optimizer_variable)
@@ -136,16 +134,6 @@ class MainWindow(QMainWindow):
         elif item is self.optimizer_params:
             self.main_tab_widget.addTab(self.optimizer_params_widget, 'Optimizer Parameters')
             self.main_tab_widget.setCurrentIndex(1)
-
-    def change_resistance_type(self, type):
-        if type == 'Linear':
-            for connector in self.graphics_view.scene().connectors():
-                connector.r_func = Resistance(r=connector.r_func.r)
-        elif type == 'Proctor and Gamble':
-            for connector in self.graphics_view.scene().connectors():
-                connector.r_func = ProctorAndGambleResistance()
-        else:
-            raise ValueError('Unrecognized connector type "{}".'.format(type))
 
     def run_sim(self):
         blocks = self.graphics_view.scene().blocks()

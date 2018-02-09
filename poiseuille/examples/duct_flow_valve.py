@@ -1,5 +1,5 @@
-from poiseuille.components.blocks import PressureReservoir, RestrictorValve
-from poiseuille.components.connector import Connector
+from poiseuille.components.procter_and_gamble.blocks import PressureReservoir, RestrictorValve
+from poiseuille.components.procter_and_gamble.connector import Connector
 from poiseuille.components.resistance_functions import Resistance
 from poiseuille.systems.system import IncompressibleSystem
 

@@ -2,9 +2,8 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QTransform
 from PyQt5.QtWidgets import QGraphicsScene
 
-from .block_graphics_item import construct_block, BlockGraphicsItem
-from .block_graphics_item import NodeGraphicsItem
-from .connector_graphics_path_item import ConnectorGraphicsPathItem
+from ..ui import base
+from ..ui import procter_and_gamble
 
 class GraphicsScene(QGraphicsScene):
     def __init__(self, parent, block_list=None, connector_list=None):
@@ -15,25 +14,25 @@ class GraphicsScene(QGraphicsScene):
         self.connector = None
 
     def blocks(self):
-        return [item.block for item in self.blockGraphicsItems()]
+        return [item.block for item in self.items() if isinstance(item, base.BlockGraphicsItem)]
 
-    def blockGraphicsItems(self):
-        return [item for item in self.items() if isinstance(item, BlockGraphicsItem)]
+    def blocks_of_type(self, Block):
+        return [item.block for item in self.blockGraphicsItems() if isinstance(item.block, Block)]
 
     def connectors(self):
-        return [item.connector for item in self.items() if isinstance(item, ConnectorGraphicsPathItem)]
+        return [item.connector for item in self.items() if isinstance(item, base.ConnectorGraphicsPathItem)]
 
     def num_blocks(self):
-        return sum(isinstance(item, BlockGraphicsItem) for item in self.items())
+        return sum(isinstance(item, base.BlockGraphicsItem) for item in self.items())
 
     def num_connectors(self):
-        return sum(isinstance(item, ConnectorGraphicsPathItem) for item in self.items())
+        return sum(isinstance(item, base.ConnectorGraphicsPathItem) for item in self.items())
 
     def load(self, blocks, positions):
         self.clear()
 
         for block, pos in zip(blocks, positions):
-            item = construct_block(block.type(), block)
+            item = procter_and_gamble.construct_block(block.type(), block)
             item.setPos(*pos)
             self.addItem(item)
 
@@ -54,7 +53,7 @@ class GraphicsScene(QGraphicsScene):
                 if conn and not conn in connectors:
                     src = node_to_graphics_item[conn.input]
                     dest = node_to_graphics_item[conn.output]
-                    item = ConnectorGraphicsPathItem()
+                    item = base.ConnectorGraphicsPathItem()
                     item.init(src, dest, conn)
                     self.addItem(item)
                     connectors.append(conn)
@@ -64,7 +63,7 @@ class GraphicsScene(QGraphicsScene):
 
     def dropEvent(self, e):
         e.accept()
-        block = construct_block(e.mimeData().text())
+        block = procter_and_gamble.ProcterAndGambleBlockGraphicsItem.factory(e.mimeData().text())
         block.setPos(e.scenePos())
         self.addItem(block)
 
@@ -76,9 +75,9 @@ class GraphicsScene(QGraphicsScene):
     def mousePressEvent(self, e):
         item  = self.itemAt(e.scenePos(), QTransform())
 
-        if isinstance(item, NodeGraphicsItem) and not item.connector:
+        if isinstance(item, base.NodeGraphicsItem) and not item.connector:
             self.node = item
-            self.connector = ConnectorGraphicsPathItem()
+            self.connector = base.ConnectorGraphicsPathItem()
             self.connector.set_path(item.center(), e.scenePos())
             self.addItem(self.connector)
         else:
@@ -96,7 +95,7 @@ class GraphicsScene(QGraphicsScene):
             e.accept()
 
             for item in self.items(e.scenePos()):
-                if isinstance(item, NodeGraphicsItem) and self.connector.connect(self.node, item):
+                if isinstance(item, base.NodeGraphicsItem) and self.connector.connect(self.node, item):
                     if self.connector_list:
                         pass
 
@@ -113,7 +112,7 @@ class GraphicsScene(QGraphicsScene):
             for item in self.selectedItems():
                 item.disconnect()
 
-                if isinstance(item, BlockGraphicsItem):
+                if isinstance(item, base.BlockGraphicsItem):
                     self.removeItem(item)
 
         super().keyPressEvent(e)

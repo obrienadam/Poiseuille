@@ -1,12 +1,9 @@
-from math import pi, sqrt
-from .resistance_functions import Resistance
+class Connector:
+    TYPE = 'Connector'
 
-
-class Connector(object):
-    def __init__(self, r_func=None, name='C'):
+    def __init__(self, name='Connector', id=None):
         self.name = name
-        self.r_func = r_func if r_func else Resistance(r=0.01)
-
+        self.id = id
         self.input = None
         self.output = None
 
@@ -18,7 +15,6 @@ class Connector(object):
             input.connector = self
             output.connector = self
             return True
-
         return False
 
     def disconnect(self):
@@ -39,20 +35,23 @@ class Connector(object):
         else:
             raise ValueError('Node is not attached to this connector.')
 
-    def update_properties(self):
+    def properties(self):
+        raise NotImplementedError
+
+    def property_ranges(self):
+        raise NotImplementedError
+
+    def property_units(self):
+        raise NotImplementedError
+
+    def solution(self):
+        raise NotImplementedError
+
+    def solution_units(self):
+        raise NotImplementedError
+
+    def update_properties(self, **kwargs):
         raise NotImplementedError
 
     def update_solution(self):
-        self.r_func.update_solution(self.input, self.output)
-
-    @property
-    def r(self):
-        return self.r_func.r
-
-    @property
-    def flow_rate(self):
-        return self.r_func.flow_rate
-
-    @property
-    def velocity_pressure(self):
-        return self.r_func.velocity_pressure
+        raise NotImplementedError

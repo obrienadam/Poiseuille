@@ -1,65 +1,32 @@
-from ..components.nodes import Node, Input, Output
-from ..components.equation import Equation, Term
+from poiseuille.components.base.blocks import Block
+from poiseuille.components.base.nodes import Node, Input, Output
+from poiseuille.equation.equation import Equation, Term
 
+class ProcterAndGambleBlock(Block):
+    def __init__(self, name='P&G Block'):
+        super().__init__(name=name)
 
-class Block:
-    def __init__(self, name='Block'):
-        self.name = name
-        self.nodes = []
+    UNITS = {
+        'Pressure': 'in H2O',
+        'Pressure differential': 'in H2O',
+        'Flow rate': 'CFM',
+        'Max flow rate': 'CFM'
+    }
 
-    def add_nodes(self, *nodes):
-        self.nodes.extend(nodes)
+class PressureReservoir(ProcterAndGambleBlock):
+    TYPE = 'Pressure Reservoir'
 
-    def all_nodes_connected(self):
-        return not any(node.connector is None for node in self.nodes)
-
-    def continuity_equation(self):
-        conn_resistances = [node.connector.r for node in self.nodes]
-        conn_nodes = [node.connector.other(node) for node in self.nodes]
-        return Equation(
-            [Term(node, 1. / r) for node, r in zip(conn_nodes, conn_resistances)]
-            + [Term(node, -1. / r) for node, r in zip(self.nodes, conn_resistances)],
-            rhs=0.
-        )
-
-    def disconnect(self):
-        for node in self.nodes:
-            node.disconnect()
-
-    def type(self):
-        return 'Block'
-
-    def properties(self):
-        raise NotImplementedError('Properties not defined for block type.')
-
-    def solution(self):
-        raise NotImplementedError('Solution not defined for block type')
-
-    def equations(self):
-        raise NotImplementedError('Equations not defined for block type.')
-
-    def update_properties(self, **kwargs):
-        raise NotImplementedError('Update properties not implemented for block type "{}".'.format(self.type()))
-
-    def update_solution(self, **kwargs):
-        raise NotImplementedError('Update solution is not implemented for this block type "{}".'.format(self.type()))
-
-    def update_solution(self):
-        raise NotImplementedError('Update solution not implemented for this block type.')
-
-
-class PressureReservoir(Block):
     def __init__(self, p=0.):
-        super(PressureReservoir, self).__init__(name='PATM')
+        super().__init__(name='PATM')
         self.p = p
         self.node = Node(self, p=0.)
         self.add_nodes(self.node)
 
-    def type(self):
-        return 'Pressure Reservoir'
-
     def properties(self):
         return {'Pressure': self.p}
+
+    def property_ranges(self):
+        return {'Pressure': (None, None)}
 
     def solution(self):
         return {}
@@ -74,9 +41,11 @@ class PressureReservoir(Block):
         pass
 
 
-class Fan(Block):
+class Fan(ProcterAndGambleBlock):
+    TYPE = 'Fan'
+
     def __init__(self, dp=0.):
-        super(Fan, self).__init__(name='Fan')
+        super().__init__(name='Fan')
         self.dp = dp
         self.power = 0.
         self.flow_rate = 0.
@@ -89,6 +58,9 @@ class Fan(Block):
 
     def properties(self):
         return {'Pressure differential': self.dp}
+
+    def property_ranges(self):
+        return {'Pressure differential': (None, None)}
 
     def solution(self):
         return {'Flow rate': self.flow_rate}
@@ -103,27 +75,30 @@ class Fan(Block):
         self.flow_rate = self.input.connector.flow_rate
 
 
-class ConstantDeliveryFan(Block):
+class ConstantDeliveryFan(ProcterAndGambleBlock):
+    TYPE = 'Constant Delivery Fan'
+
     def __init__(self, flow_rate=0.):
-        super(ConstantDeliveryFan, self).__init__()
+        super().__init__(name='Q Fan')
         self.flow_rate = flow_rate
         self.dp = 0.
         self.input = Input(self, p=0.)
         self.output = Output(self, p=0.)
         self.add_nodes(self.input, self.output)
 
-    def type(self):
-        return 'Constant Delivery Fan'
-
     def properties(self):
         return {'Flow rate': self.flow_rate}
+
+    def property_ranges(self):
+        return {'Flow rate': (None, None)}
 
     def solution(self):
         return {'Pressure differential': self.dp}
 
     def equations(self):
         r = self.input.connector.r
-        eqn = Equation([Term(self.input.connector.other(self.input), 1. / r), Term(self.input, -1. / r)], rhs=self.flow_rate)
+        eqn = Equation([Term(self.input.connector.other(self.input), 1. / r), Term(self.input, -1. / r)],
+                       rhs=self.flow_rate)
         return [eqn, self.continuity_equation()]
 
     def update_properties(self, **kwargs):
@@ -134,20 +109,21 @@ class ConstantDeliveryFan(Block):
 
 
 class PowerCurveFan(Fan):
+    TYPE = 'Power Curve Fan'
+
     def __init__(self, fcn):
+        super().__init__(dp=self.fcn(self.flow_rate))
         self.fcn = fcn
         self.flow_rate = 0.
-        super(PowerCurveFan, self).__init__(dp=self.fcn(self.flow_rate))
-
-    def type(self):
-        return 'Power Curve Fan'
 
     def update_properties(self):
         self.flow_rate = self.input.connector.flow_rate
         self.dp = self.fcn(self.flow_rate)
 
 
-class ResistorValve(Block):
+class ResistorValve(ProcterAndGambleBlock):
+    TYPE = 'Resistor Valve'
+
     def __init__(self, r=0., min_r=1e-12):
         super().__init__(name='R')
         self.r = r
@@ -156,11 +132,14 @@ class ResistorValve(Block):
         self.add_nodes(self.input, self.output)
         self.flow_rate = 0.
 
-    def type(self):
-        return 'Resistor Valve'
-
     def properties(self):
         return {'Resistance': self.r}
+
+    def property_ranges(self):
+        return {'Resistance': (0, None)}
+
+    def property_ranges(self):
+        return {'Pressure differential': (None, None)}
 
     def solution(self):
         return {}
@@ -186,18 +165,18 @@ class ResistorValve(Block):
 
 
 class RestrictorValve(ResistorValve):
+    TYPE = 'Restrictor Valve'
+
     def __init__(self, max_flow_rate=0., allow_backflow=True):
         super().__init__(r=0)
         self.max_flow_rate = max_flow_rate
         self.allow_backflow = allow_backflow
 
-    def type(self):
-        return 'Restrictor Valve'
-
     def properties(self):
-        return {
-            'Max flow rate': self.max_flow_rate,
-        }
+        return {'Max flow rate': self.max_flow_rate}
+
+    def property_ranges(self):
+        return {'Max flow rate': (0, None)}
 
     def solution(self):
         return {
@@ -219,15 +198,14 @@ class RestrictorValve(ResistorValve):
         self.max_flow_rate = kwargs.get('Max flow rate', self.max_flow_rate)
 
 
-class PerfectSplitter(Block):
+class PerfectSplitter(ProcterAndGambleBlock):
+    TYPE = 'Perfect Splitter'
+
     def __init__(self, num_outputs=1):
-        super(PerfectSplitter, self).__init__()
+        super().__init__(name='Splitter')
         self.input = Input(self, p=0)
         self.outputs = [Output(self, p=0) for i in range(num_outputs)]
         self.add_nodes(self.input, *self.outputs)
-
-    def type(self):
-        return 'Perfect Splitter'
 
     def equations(self):
         eqns = [Equation([Term(self.input, 1), Term(output, -1)], 0.) for output in self.outputs]
@@ -239,13 +217,12 @@ class PerfectSplitter(Block):
         pass
 
 
-class PerfectJunction(Block):
-    def __init__(self, num_nodes=1):
-        super(PerfectJunction, self).__init__()
-        self.nodes = [Node(self, p=0) for i in range(num_nodes)]
+class PerfectJunction(ProcterAndGambleBlock):
+    TYPE = 'Perfect Junction'
 
-    def type(self):
-        return 'Perfect Junction'
+    def __init__(self, num_nodes=1):
+        super().__init__(name='Junction')
+        self.nodes = [Node(self, p=0) for i in range(num_nodes)]
 
     def equations(self):
         eqns = [Equation([Term(self.nodes[-1], 1.), Term(node, -1.)], 0.) for node in self.nodes[:-1]]
@@ -256,7 +233,10 @@ class PerfectJunction(Block):
     def update_solution(self):
         pass
 
-class Joiner(Block):
+
+class Joiner(ProcterAndGambleBlock):
+    TYPE = 'Joiner'
+
     def __init__(self, k_regain=0.6, k_loss=1):
         super().__init__(name='Joiner')
         self.k_regain = k_regain
@@ -266,17 +246,20 @@ class Joiner(Block):
         self.output = Output(self, p=0)
         self.add_nodes(self.input_1, self.input_2, self.output)
 
-    def type(self):
-        return 'Joiner'
-
     def properties(self):
         return {
             'Regain coefficient': self.k_regain,
             'Loss coefficient': self.k_loss
         }
 
+    def property_ranges(self):
+        return {
+            'Regain coefficient': (0, 1),
+            'Loss coefficient': (0, None)
+        }
+
     def solution(self):
-        if self.all_nodes_connected():
+        if all([node.connector for node in self.nodes]):
             vp_1 = self.input_1.connector.velocity_pressure
             vp_2 = self.input_2.connector.velocity_pressure
             vp_3 = self.output.connector.velocity_pressure
@@ -306,8 +289,8 @@ class Joiner(Block):
         else:
             eqn2.rhs = self.k_loss * (vp_2 - vp_3)
 
-        #eqn1 = Equation([Term(self.input_1, 1), Term(self.output, -1)])
-        #eqn2 = Equation([Term(self.input_2, 1), Term(self.output, -1)])
+        # eqn1 = Equation([Term(self.input_1, 1), Term(self.output, -1)])
+        # eqn2 = Equation([Term(self.input_2, 1), Term(self.output, -1)])
         return [self.continuity_equation(), eqn1, eqn2]
 
     def update_properties(self, **kwargs):

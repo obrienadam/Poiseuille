@@ -14,7 +14,7 @@ class BlockPaletteItem(QLabel):
         drag.setPixmap(self.pixmap())
 
         mimeData = QMimeData()
-        mimeData.setText(self.block.block.type())
+        mimeData.setText(self.block.block.TYPE)
 
         drag.setMimeData(mimeData)
         drag.setHotSpot(e.pos())

@@ -1,24 +1,13 @@
-from .connector import Connector
+class Node:
+    TYPE = 'Node'
 
-class Node(object):
-    def __init__(self, block, **properties):
+    def __init__(self, block, id=None, **properties):
         for key, value in properties.items():
             setattr(self, key, value)
 
         self.block = block
-        self.id = None
+        self.id = id
         self.connector = None
-
-    def type(self):
-        return 'Node'
-
-    def connect(self, node):
-        if self.can_connect(node):
-            self.disconnect()
-            node.disconnect()
-            self.connector = Connector()
-            self.connector.connect(self, node)
-            return self.connector
 
     def disconnect(self):
         if self.connector:
@@ -29,16 +18,14 @@ class Node(object):
 
 
 class Input(Node):
-    def type(self):
-        return 'Input'
+    TYPE = 'Input'
 
     def can_connect(self, node):
         return not isinstance(node, Input) and super(Input, self).can_connect(node)
 
 
 class Output(Node):
-    def type(self):
-        return 'Output'
+    TYPE = 'Output'
 
     def can_connect(self, node):
         return not isinstance(node, Output) and super(Output, self).can_connect(node)

@@ -32,7 +32,7 @@ class GraphicsScene(QGraphicsScene):
         self.clear()
 
         for block, pos in zip(blocks, positions):
-            item = procter_and_gamble.construct_block(block.type(), block)
+            item = procter_and_gamble.ProcterAndGambleBlockGraphicsItem.factory(block.type(), block)
             item.setPos(*pos)
             self.addItem(item)
 

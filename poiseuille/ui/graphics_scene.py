@@ -6,7 +6,7 @@ from ..ui import base
 from ..ui import procter_and_gamble
 
 class GraphicsScene(QGraphicsScene):
-    def __init__(self, parent, block_list=None, connector_list=None):
+    def __init__(self, parent=None, block_list=None, connector_list=None):
         super().__init__(parent=parent)
         self.block_list = block_list
         self.connector_list = connector_list
@@ -17,7 +17,7 @@ class GraphicsScene(QGraphicsScene):
         return [item.block for item in self.items() if isinstance(item, base.BlockGraphicsItem)]
 
     def blocks_of_type(self, Block):
-        return [item.block for item in self.blockGraphicsItems() if isinstance(item.block, Block)]
+        return [block for block in self.blocks() if isinstance(block, Block)]
 
     def connectors(self):
         return [item.connector for item in self.items() if isinstance(item, base.ConnectorGraphicsPathItem)]

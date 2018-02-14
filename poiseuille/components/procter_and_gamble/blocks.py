@@ -2,16 +2,18 @@ from poiseuille.components.base.blocks import Block
 from poiseuille.components.base.nodes import Node, Input, Output
 from poiseuille.equation.equation import Equation, Term
 
-class ProcterAndGambleBlock(Block):
-    def __init__(self, name='P&G Block'):
-        super().__init__(name=name)
 
+class ProcterAndGambleBlock(Block):
     UNITS = {
         'Pressure': 'in H2O',
         'Pressure differential': 'in H2O',
         'Flow rate': 'CFM',
         'Max flow rate': 'CFM'
     }
+
+    def __init__(self, name='P&G Block'):
+        super().__init__(name=name)
+
 
 class PressureReservoir(ProcterAndGambleBlock):
     TYPE = 'Pressure Reservoir'
@@ -26,7 +28,7 @@ class PressureReservoir(ProcterAndGambleBlock):
         return {'Pressure': self.p}
 
     def property_ranges(self):
-        return {'Pressure': (None, None)}
+        return {'Pressure': (-float('inf'), float('inf'))}
 
     def solution(self):
         return {}

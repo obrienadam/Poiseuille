@@ -1,12 +1,14 @@
 import pickle
 
-from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QFileDialog
+from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QFileDialog, QLabel, QCheckBox
 from PyQt5 import uic
 
 from .graphics_scene import GraphicsScene
 from ..ui import procter_and_gamble
 from .palette import BlockPaletteItem
-from .dialog import VariableDefinitionDialog
+
+from .system_ui import SystemUi
+from .optimizer_ui import OptimizerUi
 
 from poiseuille.systems.system import IncompressibleSystem
 from poiseuille.optimizers.optimizers import Optimizer
@@ -16,13 +18,10 @@ class MainWindow(QMainWindow):
         super().__init__()
         uic.loadUi(uifile='designer/mainwindow.ui', baseinstance=self)
 
-        view = self.graphics_view
-        scene = GraphicsScene(view)
-        view.setScene(scene)
+        self.scene = GraphicsScene()
+        self.graphics_view.setScene(self.scene)
 
         # Main classes
-        self.optimizer = Optimizer()
-
         self.init_parameters_tree()
         self.init_palettes()
         self.init_actions()
@@ -31,7 +30,15 @@ class MainWindow(QMainWindow):
         self.show()
 
     def init_parameters_tree(self):
-        pass
+        self.system_params_tree_item = self.parameters_tree.topLevelItem(0).child(0)
+        self.optimizer_params_tree_item = self.parameters_tree.topLevelItem(0).child(1)
+        self.block_list_tree_item = self.parameters_tree.topLevelItem(0).child(2)
+        self.connector_list_tree_item = self.parameters_tree.topLevelItem(0).child(3)
+
+        self.system_params = SystemUi(scene=self.scene)
+        self.optimizer_params = OptimizerUi(scene=self.scene)
+
+        self.main_tab_widget.currentChanged.connect(self.update_params)
 
     def init_palettes(self):
         self.palette_env.setLayout(QHBoxLayout())
@@ -45,18 +52,6 @@ class MainWindow(QMainWindow):
         self.palette_valves.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.JoinerGraphicsItem))
 
     def init_actions(self):
-        self.solver_params = self.parameters_tree.topLevelItem(0).child(0)
-        self.fluid_params = self.parameters_tree.topLevelItem(0).child(1)
-        self.optimizer_params = self.parameters_tree.topLevelItem(0).child(2)
-        self.block_list = self.parameters_tree.topLevelItem(0).child(3)
-        self.connector_list = self.parameters_tree.topLevelItem(0).child(4)
-        self.solver_params_widget = self.main_tab_widget.widget(1)
-        self.fluid_params_widget = self.main_tab_widget.widget(2)
-        self.optimizer_params_widget = self.main_tab_widget.widget(3)
-
-        self.main_tab_widget.removeTab(1)
-        self.main_tab_widget.removeTab(1)
-
         # Parameter tree
         self.parameters_tree.itemDoubleClicked.connect(self.change_params)
 
@@ -120,37 +115,24 @@ class MainWindow(QMainWindow):
             with open(dialog.selectedFiles()[0], 'wb') as f:
                 self.loaded_case = f.name
 
+    def update_params(self, id):
+        if self.main_tab_widget.widget(id) is self.optimizer_params:
+            self.optimizer_params.update_forms()
 
     def change_params(self, item):
         if self.main_tab_widget.widget(1):
             self.main_tab_widget.removeTab(1)
 
-        if item is self.solver_params:
-            self.main_tab_widget.addTab(self.solver_params_widget, 'Solver Parameters')
-            self.main_tab_widget.setCurrentIndex(1)
-        elif item is self.fluid_params:
-            self.main_tab_widget.addTab(self.fluid_params_widget, 'Fluid Parameters')
-            self.main_tab_widget.setCurrentIndex(1)
-        elif item is self.optimizer_params:
-            self.main_tab_widget.addTab(self.optimizer_params_widget, 'Optimizer Parameters')
-            self.main_tab_widget.setCurrentIndex(1)
+        if item is self.system_params_tree_item:
+            self.main_tab_widget.addTab(self.system_params, 'System Parameters')
+        elif item is self.optimizer_params_tree_item:
+            self.optimizer_params.update_forms()
+            self.main_tab_widget.addTab(self.optimizer_params, 'Optimizer Parameters')
+
+        self.main_tab_widget.setCurrentIndex(1)
 
     def run_sim(self):
-        blocks = self.graphics_view.scene().blocks()
-
-        if blocks:
-            system = IncompressibleSystem(blocks)
-            system.solve(maxiter=5000, method='lgmres', verbose=1)
-        else:
-            print('Scene is empty.')
+        self.system_params.solve()
 
     def run_optimizer(self):
-        print('Running optimizer!')
-
-    def create_optimizer_variable(self):
-        dialog = VariableDefinitionDialog(blocks=self.graphics_view.scene().blocks())
-
-        if dialog.exec() == dialog.Accepted:
-            var = dialog.get_new_variable()
-            if var:
-                self.optimizer.add_variable(*var)
+        self.optimizer_params.solve()

@@ -1,13 +1,25 @@
+from enum import Enum
+
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 import scipy.optimize as opt
 from scipy.optimize.nonlin import NoConvergence
 import numpy as np
 
+class Status(Enum):
+    UNSOLVED = 0
+    SOLVED = 1
+    INVALID_SYSTEM_STATE = 2
+    NO_CONVERGENCE = 3
+    NAN_DETECTED = 4
 
-class System(object):
+class System:
     def __init__(self, blocks=[]):
         self.blocks = blocks
+        self.status = Status.UNSOLVED
+
+    def nodes(self):
+        return [node for block in self.blocks for node in block.nodes]
 
     def get_unconnected_nodes(self):
         return [node for node in self.nodes() if not node.connector]
@@ -16,15 +28,8 @@ class System(object):
         for id, node in enumerate(self.nodes()):
             node.id = id
 
-    def nodes(self):
-        return [node for block in self.blocks for node in block.nodes]
-
     def connectors(self):
-        connectors = []
-        for node in self.nodes():
-            if not node.connector in connectors:
-                connectors.append(node.connector)
-        return connectors
+        return set((node.connector for node in self.nodes()))
 
     def equations(self):
         return [eqn for block in self.blocks for eqn in block.equations()]
@@ -43,7 +48,7 @@ class System(object):
     def map_solution_to_nodes(self, soln):
         raise NotImplementedError
 
-    def solve(self):
+    def solve(self, maxiter=2000, toler=1e-10, verbose=0, method='lgmres'):
         raise NotImplementedError
 
     class LinearPreconditioner(spla.LinearOperator):
@@ -62,8 +67,8 @@ class System(object):
 
 class IncompressibleSystem(System):
     def map_solution_to_nodes(self, soln):
-        for id, node in enumerate(self.nodes()):
-            node.p = soln[id]
+        for node in self.nodes():
+            node.p = soln[node.id]
 
         for conn in self.connectors():
             conn.update_solution()
@@ -72,6 +77,10 @@ class IncompressibleSystem(System):
             block.update_solution()
 
     def solve(self, maxiter=2000, toler=1e-10, verbose=0, method='lgmres'):
+        if self.get_unconnected_nodes():
+            self.status = Status.INVALID_SYSTEM_STATE
+            return
+
         def residual(x):
             self.map_solution_to_nodes(x)
             A, rhs = self.matrix(), self.rhs()
@@ -82,7 +91,11 @@ class IncompressibleSystem(System):
             p = opt.newton_krylov(residual, np.array([node.p for node in self.nodes()]), verbose=verbose,
                                   inner_M=inner_M, f_tol=toler, method=method, maxiter=maxiter)
         except NoConvergence as e:  # If iterations fail, restart using zeros
-            p = opt.newton_krylov(residual, np.zeros(len(self.nodes())), verbose=verbose,
-                                  inner_M=inner_M, f_tol=toler, method=method, maxiter=maxiter)
+            try:
+                p = opt.newton_krylov(residual, np.zeros(len(self.nodes())), verbose=verbose,
+                                      inner_M=inner_M, f_tol=toler, method=method, maxiter=maxiter)
+            except NoConvergence as e:
+                self.status = Status.NO_CONVERGENCE
 
+        self.status = Status.SOLVED
         self.map_solution_to_nodes(p)

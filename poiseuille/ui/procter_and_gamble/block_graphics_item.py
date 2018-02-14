@@ -2,37 +2,40 @@ from ..base.block_graphics_item import BlockGraphicsItem
 from ..base.node_graphics_item import NodeGraphicsItem
 from poiseuille.components.procter_and_gamble.blocks import *
 
+
 class ProcterAndGambleBlockGraphicsItem(BlockGraphicsItem):
     def __init__(self, block, file):
         super().__init__(block=block, file=file)
 
-    def factory(type):
+    def factory(type, block=None):
         if type == 'Pressure Reservoir':
-            return PressureReservoirGraphicsItem()
+            return PressureReservoirGraphicsItem(block=block)
         elif type == 'Fan':
-            return FanGraphicsItem()
+            return FanGraphicsItem(block=block)
         elif type == 'Constant Delivery Fan':
-            return ConstDeliveryFanGraphicsItem()
+            return ConstDeliveryFanGraphicsItem(block=block)
         elif type == 'Restrictor Valve':
-            return RestrictorValveGraphicsItem()
+            return RestrictorValveGraphicsItem(block=block)
         elif type == 'Joiner':
-            return JoinerGraphicsItem()
+            return JoinerGraphicsItem(block=block)
         else:
             raise ValueError('No block type "{}".'.format(type))
 
     factory = staticmethod(factory)
 
+
 class PressureReservoirGraphicsItem(ProcterAndGambleBlockGraphicsItem):
-    def __init__(self):
-        super().__init__(block=PressureReservoir(), file='resources/pressure_reservoir')
+    def __init__(self, block=None):
+        super().__init__(block=block if block else PressureReservoir(), file='resources/pressure_reservoir')
 
     def init_nodes(self):
         self.nodes.append(NodeGraphicsItem(self.block.node, self, x=-10, y=17.5))
 
 
 class FanGraphicsItem(ProcterAndGambleBlockGraphicsItem):
-    def __init__(self):
-        super().__init__(block=Fan(), file='resources/fan')
+    def __init__(self, block=None):
+        fan = block
+        super().__init__(block=block if block else Fan(), file='resources/fan')
 
     def init_nodes(self):
         self.nodes.append(NodeGraphicsItem(self.block.input, self, x=-10, y=17.5))
@@ -40,8 +43,8 @@ class FanGraphicsItem(ProcterAndGambleBlockGraphicsItem):
 
 
 class ConstDeliveryFanGraphicsItem(ProcterAndGambleBlockGraphicsItem):
-    def __init__(self):
-        super().__init__(block=ConstantDeliveryFan(), file='resources/const_flow_fan')
+    def __init__(self, block=None):
+        super().__init__(block=block if block else ConstantDeliveryFan(), file='resources/const_flow_fan')
 
     def init_nodes(self):
         self.nodes.append(NodeGraphicsItem(self.block.input, self, x=-7.5, y=17.5))
@@ -49,8 +52,8 @@ class ConstDeliveryFanGraphicsItem(ProcterAndGambleBlockGraphicsItem):
 
 
 class RestrictorValveGraphicsItem(ProcterAndGambleBlockGraphicsItem):
-    def __init__(self):
-        super().__init__(block=RestrictorValve(), file='resources/valve')
+    def __init__(self, block=None):
+        super().__init__(block=block if block else RestrictorValve(), file='resources/valve')
 
     def init_nodes(self):
         self.nodes.append(NodeGraphicsItem(self.block.input, self, x=-7.5, y=17.5))
@@ -58,8 +61,8 @@ class RestrictorValveGraphicsItem(ProcterAndGambleBlockGraphicsItem):
 
 
 class JoinerGraphicsItem(ProcterAndGambleBlockGraphicsItem):
-    def __init__(self):
-        super().__init__(block=Joiner(), file='resources/joiner')
+    def __init__(self, block=None):
+        super().__init__(block=block if block else Joiner(), file='resources/joiner')
 
     def init_nodes(self):
         self.nodes.append(NodeGraphicsItem(self.block.input_1, self, x=-7.5, y=54))

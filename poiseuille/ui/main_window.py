@@ -48,7 +48,7 @@ class MainWindow(QMainWindow):
         self.palette_env.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.PressureReservoirGraphicsItem))
         self.palette_power.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.FanGraphicsItem))
         self.palette_power.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.ConstDeliveryFanGraphicsItem))
-        self.palette_valves.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.RestrictorValveGraphicsItem))
+        self.palette_valves.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.ResistorValveGraphicsItem))
         self.palette_valves.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.JoinerGraphicsItem))
 
     def init_actions(self):

@@ -36,7 +36,7 @@
        <attribute name="title">
         <string>Model</string>
        </attribute>
-       <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <layout class="QVBoxLayout" name="verticalLayout">
         <item>
          <widget class="QGraphicsView" name="graphics_view">
           <property name="acceptDrops">

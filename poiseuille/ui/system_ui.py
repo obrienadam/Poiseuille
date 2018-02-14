@@ -1,6 +1,7 @@
 from PyQt5 import QtWidgets
 
 import poiseuille.systems as sys
+from poiseuille.systems import Status
 
 
 class SystemUi(QtWidgets.QWidget):
@@ -11,10 +12,12 @@ class SystemUi(QtWidgets.QWidget):
 
         self.setLayout(QtWidgets.QFormLayout())
 
+        self.system_status_label = QtWidgets.QLabel('Unsolved')
+
         self.solver_combo_box = QtWidgets.QComboBox()
-        self.solver_combo_box.addItem('LGMRES')
-        self.solver_combo_box.addItem('GMRES')
         self.solver_combo_box.addItem('BiCGSTAB')
+        self.solver_combo_box.addItem('GMRES')
+        self.solver_combo_box.addItem('LGMRES')
 
         self.max_iters_spin_box = QtWidgets.QSpinBox()
         self.max_iters_spin_box.setMinimum(1)
@@ -29,9 +32,13 @@ class SystemUi(QtWidgets.QWidget):
         self.tol_spin_box.setSingleStep(1e-5)
         self.tol_spin_box.setValue(1e-4)
 
+        self.verbose_check_box = QtWidgets.QCheckBox()
+
+        self.layout().addRow(QtWidgets.QLabel('System status: '), self.system_status_label)
         self.layout().addRow(QtWidgets.QLabel('Solver: '), self.solver_combo_box)
         self.layout().addRow(QtWidgets.QLabel('Max iters: '), self.max_iters_spin_box)
         self.layout().addRow(QtWidgets.QLabel('Tolerance: '), self.tol_spin_box)
+        self.layout().addRow(QtWidgets.QLabel('Verbose console output: '), self.verbose_check_box)
 
         self.set_sytem_type('Incompressible')
 
@@ -51,5 +58,12 @@ class SystemUi(QtWidgets.QWidget):
             maxiter=self.max_iters_spin_box.value(),
             toler=self.tol_spin_box.value(),
             method=self.solver_combo_box.currentText().lower(),
-            verbose=1
+            verbose=self.verbose_check_box.isChecked()
         )
+
+        if self.system.status == Status.SOLVED:
+            self.system_status_label.setText('Solved')
+        elif self.system.status == Status.INVALID_SYSTEM_STATE:
+            self.system_status_label.setText('Invalid state')
+        elif self.system.status == Status.NO_CONVERGENCE:
+            self.system_status_label.setText('Failed to converge')

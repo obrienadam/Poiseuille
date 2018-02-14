@@ -21,8 +21,8 @@ class BlockDialog(QDialog):
 
             spin_box = QDoubleSpinBox()
             spin_box.setRange(*range)
+            spin_box.setDecimals(14)
             spin_box.setValue(value)
-            spin_box.setDecimals(2)
             spin_box.setAccelerated(True)
 
             if key in block.UNITS:

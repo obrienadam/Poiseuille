@@ -46,8 +46,8 @@ class PressureReservoir(ProcterAndGambleBlock):
 class Fan(ProcterAndGambleBlock):
     TYPE = 'Fan'
 
-    def __init__(self, dp=0.):
-        super().__init__(name='Fan')
+    def __init__(self, dp=0., name='Fan'):
+        super().__init__(name=name)
         self.dp = dp
         self.power = 0.
         self.flow_rate = 0.
@@ -114,13 +114,28 @@ class PowerCurveFan(Fan):
     TYPE = 'Power Curve Fan'
 
     def __init__(self, fcn):
-        super().__init__(dp=self.fcn(self.flow_rate))
+        super().__init__(dp=0., name='Fan (PC)')
         self.fcn = fcn
-        self.flow_rate = 0.
+
+    def properties(self):
+        return {}
+
+    def property_ranges(self):
+        return {}
+
+    def solution(self):
+        return {
+            'Pressure differential': self.dp,
+            'Power': self.power,
+        }
 
     def update_properties(self):
-        self.flow_rate = self.input.connector.flow_rate
+        pass
+
+    def update_solution(self):
+        self.flow_rate = (self.input.connector.other(self.input).p - self.input.p) / self.input.connector.r
         self.dp = self.fcn(self.flow_rate)
+        self.power = self.flow_rate * self.dp
 
 
 class ResistorValve(ProcterAndGambleBlock):
@@ -166,40 +181,6 @@ class ResistorValve(ProcterAndGambleBlock):
             self.flow_rate = self.input.connector.flow_rate
 
 
-class RestrictorValve(ResistorValve):
-    TYPE = 'Restrictor Valve'
-
-    def __init__(self, max_flow_rate=0., allow_backflow=True):
-        super().__init__(r=0)
-        self.max_flow_rate = max_flow_rate
-        self.allow_backflow = allow_backflow
-
-    def properties(self):
-        return {'Max flow rate': self.max_flow_rate}
-
-    def property_ranges(self):
-        return {'Max flow rate': (0, None)}
-
-    def solution(self):
-        return {
-            'Flow rate': self.flow_rate,
-            'Resistance': self.r,
-        }
-
-    def equations(self):
-        if abs(self.flow_rate) > abs(self.max_flow_rate):
-            r_line = self.input.connector.r + self.output.connector.r
-            dp_line = abs(self.input.connector.other(self.input).p - self.output.connector.other(self.output).p)
-            self.r = dp_line / self.max_flow_rate - r_line
-        else:
-            self.r = 0.
-
-        return super().equations()
-
-    def update_properties(self, **kwargs):
-        self.max_flow_rate = kwargs.get('Max flow rate', self.max_flow_rate)
-
-
 class PerfectSplitter(ProcterAndGambleBlock):
     TYPE = 'Perfect Splitter'
 
@@ -210,7 +191,14 @@ class PerfectSplitter(ProcterAndGambleBlock):
         self.add_nodes(self.input, *self.outputs)
 
     def equations(self):
-        eqns = [Equation([Term(self.input, 1), Term(output, -1)], 0.) for output in self.outputs]
+        r1 = self.outputs[0].connector.area / self.input.connector.area
+        r2 = self.outputs[1].connector.area / self.input.connector.area
+
+        eqns = [
+            Equation([Term(self.outputs[0], 1.), Term(self.input, -r1)]),
+            Equation([Term(self.outputs[1], 1.), Term(self.input, -r2)])
+        ]
+
         eqns.append(self.continuity_equation())
 
         return eqns
@@ -227,6 +215,13 @@ class PerfectJunction(ProcterAndGambleBlock):
         self.nodes = [Node(self, p=0) for i in range(num_nodes)]
 
     def equations(self):
+        eqns = []
+        for node in self.nodes[:-1]:
+            ratio = node.connector.area / self.nodes[-1].connector.area
+            eqns.append(
+                Equation([Term(node, 1.), Term(self.nodes[-1], -ratio)])
+            )
+
         eqns = [Equation([Term(self.nodes[-1], 1.), Term(node, -1.)], 0.) for node in self.nodes[:-1]]
         eqns.append(self.continuity_equation())
 
@@ -274,25 +269,48 @@ class Joiner(ProcterAndGambleBlock):
         }
 
     def equations(self):
-        vp_1 = self.input_1.connector.velocity_pressure
-        vp_2 = self.input_2.connector.velocity_pressure
-        vp_3 = self.output.connector.velocity_pressure
-
-        eqn1 = Equation([Term(self.output, 1), Term(self.input_1, -1)])
-        eqn2 = Equation([Term(self.output, 1), Term(self.input_2, -1)])
+        c1 = self.input_1.connector
+        c2 = self.input_2.connector
+        c3 = self.output.connector
+        vp_1 = c1.velocity_pressure
+        vp_2 = c2.velocity_pressure
+        vp_3 = c3.velocity_pressure
+        q1 = c1.flow_rate
+        q2 = c2.flow_rate
+        q3 = c3.flow_rate
 
         if vp_1 - vp_3 > 0:
-            eqn1.rhs = self.k_regain * (vp_1 - vp_3)
+            a1 = self.k_regain * vp_1 / q1 if q1 != 0. else 0.
+            a3 = -self.k_regain * vp_3 / q3 if q3 != 0. else 0.
         else:
-            eqn1.rhs = self.k_loss * (vp_1 - vp_3)
+            a1 = self.k_loss * vp_1 / q1 if q1 != 0. else 0.
+            a3 = -self.k_loss * vp_3 / q3 if q3 != 0. else 0.
+
+        eqn1 = Equation([
+            Term(self.output, 1),
+            Term(self.input_1, -1),
+            Term(c1.input, a1 / c1.r),
+            Term(c1.output, -a1 / c1.r),
+            Term(c3.input, -a3 / c3.r),
+            Term(c3.output, a3 / c3.r)
+        ])
 
         if vp_2 - vp_3 > 0:
-            eqn2.rhs = self.k_regain * (vp_2 - vp_3)
+            a2 = self.k_regain * vp_2 / q2 if q2 != 0. else 0.
+            a3 = -self.k_regain * vp_3 / q3 if q3 != 0. else 0.
         else:
-            eqn2.rhs = self.k_loss * (vp_2 - vp_3)
+            a2 = self.k_loss * vp_2 / q2 if q2 != 0. else 0.
+            a3 = -self.k_loss * vp_3 / q3 if q3 != 0. else 0.
 
-        # eqn1 = Equation([Term(self.input_1, 1), Term(self.output, -1)])
-        # eqn2 = Equation([Term(self.input_2, 1), Term(self.output, -1)])
+        eqn2 = Equation([
+            Term(self.output, 1),
+            Term(self.input_2, -1),
+            Term(c1.input, a2 / c2.r),
+            Term(c1.output, -a2 / c2.r),
+            Term(c3.input, -a3 / c3.r),
+            Term(c3.output, a3 / c3.r)
+        ])
+
         return [self.continuity_equation(), eqn1, eqn2]
 
     def update_properties(self, **kwargs):

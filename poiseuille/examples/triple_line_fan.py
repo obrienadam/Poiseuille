@@ -1,6 +1,5 @@
 from poiseuille.components.procter_and_gamble.blocks import PressureReservoir, Fan, PerfectSplitter
-from poiseuille.components.procter_and_gamble.connector import Connector
-from poiseuille.components.resistance_functions import ProctorAndGambleResistance
+from poiseuille.components.procter_and_gamble.connector import ProcterAndGambleConnector
 from poiseuille.systems.system import IncompressibleSystem
 
 def run():
@@ -10,10 +9,10 @@ def run():
     fan = Fan(dp=4.3)
     s = PerfectSplitter(num_outputs=2)
 
-    c1 = Connector(r_func=ProctorAndGambleResistance(d=5, l=50))
-    c2 = Connector(r_func=ProctorAndGambleResistance(d=5, l=50))
-    c3 = Connector(r_func=ProctorAndGambleResistance(d=5, l=50))
-    c4 = Connector(r_func=ProctorAndGambleResistance(d=5, l=50))
+    c1 = ProcterAndGambleConnector(diameter=4)
+    c2 = ProcterAndGambleConnector(diameter=5)
+    c3 = ProcterAndGambleConnector(diameter=6)
+    c4 = ProcterAndGambleConnector(diameter=2)
 
     c1.connect(p1.node, s.input)
     c2.connect(s.outputs[0], p2.node)
@@ -22,6 +21,10 @@ def run():
 
     system = IncompressibleSystem([p1, p2, p3, s, fan])
     system.solve()
+
+    for c in c1, c2, c3, c4:
+        print(c.flow_rate)
+        print()
 
 if __name__ == '__main__':
     run()

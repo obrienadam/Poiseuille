@@ -83,11 +83,14 @@ class MainWindow(QMainWindow):
             pass
 
         dialog = QFileDialog()
+
         if dialog.exec():
             with open(dialog.selectedFiles()[0], 'rb') as f:
                 try:
                     data = pickle.load(f)
-                    self.graphics_view.scene().load(data['blocks'], data['positions'])
+                    self.system_params.init(**data['solver_params'])
+                    self.optimizer_params.init(**data['optimizer_params'])
+                    self.scene.load(data['blocks'], data['positions'])
                     self.loaded_case = f.name
                 except pickle.UnpicklingError as e:
                     print('Error loading file "{}". File may be corrupted.'.format(f.name))
@@ -98,11 +101,10 @@ class MainWindow(QMainWindow):
 
         with open(self.loaded_case, 'wb') as f:
             data = {
-                'blocks': self.graphics_view.scene().blocks(),
-                'positions': [(item.scenePos().x(), item.scenePos().y()) for item in
-                              self.graphics_view.scene().blockGraphicsItems()],
-                'solver_params': {},
-                'optimizer_params': {},
+                'blocks': self.scene.blocks(),
+                'positions': self.scene.block_positions(),
+                'solver_params': self.system_params.parameters(),
+                'optimizer_params': self.optimizer_params.parameters(),
             }
 
             pickle.dump(data, f)

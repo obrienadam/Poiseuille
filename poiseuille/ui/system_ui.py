@@ -34,6 +34,7 @@ class SystemUi(QtWidgets.QWidget):
 
         self.verbose_check_box = QtWidgets.QCheckBox()
 
+        # All params that are initialized
         self.layout().addRow(QtWidgets.QLabel('System status: '), self.system_status_label)
         self.layout().addRow(QtWidgets.QLabel('Solver: '), self.solver_combo_box)
         self.layout().addRow(QtWidgets.QLabel('Max iters: '), self.max_iters_spin_box)
@@ -41,6 +42,20 @@ class SystemUi(QtWidgets.QWidget):
         self.layout().addRow(QtWidgets.QLabel('Verbose console output: '), self.verbose_check_box)
 
         self.set_sytem_type('Incompressible')
+
+    def init(self, **kwargs):
+        self.system_status_label.setText(kwargs.get('System status', self.system_status_label.text()))
+        self.solver_combo_box.setCurrentText(kwargs.get('Solver', self.solver_combo_box.currentText()))
+        self.max_iters_spin_box.setValue(kwargs.get('Max iters', self.max_iters_spin_box.value()))
+        self.tol_spin_box.setValue(kwargs.get('Tolerance', self.tol_spin_box.value()))
+
+    def parameters(self):
+        return {
+            'System status': self.system_status_label.text(),
+            'Solver': self.solver_combo_box.currentText(),
+            'Max iters': self.max_iters_spin_box.value(),
+            'Tolerance': self.tol_spin_box.value()
+        }
 
     def set_sytem_type(self, sytem_type):
         if sytem_type == 'Incompressible':

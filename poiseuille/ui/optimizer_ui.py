@@ -26,6 +26,12 @@ class OptimizerUi(QtWidgets.QWidget):
         self.block_check_box = {}
         self.block_enabled = {}
 
+    def init(self, **kwargs):
+        pass
+
+    def parameters(self):
+        return {}
+
     def update_forms(self):
         fans = self.scene.blocks_of_type(procter_and_gamble.Fan)
         resistors = self.scene.blocks_of_type(procter_and_gamble.ResistorValve)

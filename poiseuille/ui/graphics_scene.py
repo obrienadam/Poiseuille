@@ -13,6 +13,12 @@ class GraphicsScene(QGraphicsScene):
         self.node = None
         self.connector = None
 
+    def block_graphics_items(self):
+        return (item for item in self.items() if isinstance(item, base.BlockGraphicsItem))
+
+    def block_positions(self):
+        return [(item.pos().x(), item.pos().y()) for item in self.items() if isinstance(item, base.BlockGraphicsItem)]
+
     def blocks(self):
         return [item.block for item in self.items() if isinstance(item, base.BlockGraphicsItem)]
 
@@ -32,16 +38,16 @@ class GraphicsScene(QGraphicsScene):
         self.clear()
 
         for block, pos in zip(blocks, positions):
-            item = procter_and_gamble.ProcterAndGambleBlockGraphicsItem.factory(block.type(), block)
+            item = procter_and_gamble.ProcterAndGambleBlockGraphicsItem.factory(block.TYPE, block)
             item.setPos(*pos)
             self.addItem(item)
 
         # Get map of nodes to their graphic items
-        node_to_graphics_item = {}
+        node_to_node_graphics_item = {}
 
-        for block in self.blockGraphicsItems():
+        for block in self.block_graphics_items():
             for node in block.nodes:
-                node_to_graphics_item[node.node] = node
+                node_to_node_graphics_item[node.node] = node
 
         # Construct connector list
         connectors = []
@@ -51,8 +57,8 @@ class GraphicsScene(QGraphicsScene):
                 conn = node.connector
 
                 if conn and not conn in connectors:
-                    src = node_to_graphics_item[conn.input]
-                    dest = node_to_graphics_item[conn.output]
+                    src = node_to_node_graphics_item[conn.input]
+                    dest = node_to_node_graphics_item[conn.output]
                     item = base.ConnectorGraphicsPathItem()
                     item.init(src, dest, conn)
                     self.addItem(item)

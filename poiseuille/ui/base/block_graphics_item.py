@@ -1,6 +1,6 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-from poiseuille.ui.dialog import BlockDialog
+from poiseuille.ui.dialog import Dialog
 
 class BlockGraphicsItemLabel(QtWidgets.QGraphicsTextItem):
     def __init__(self, parent):
@@ -39,10 +39,11 @@ class BlockGraphicsItem(QtWidgets.QGraphicsPixmapItem):
             node.disconnect()
 
     def mouseDoubleClickEvent(self, QGraphicsSceneMouseEvent):
-        dialog = BlockDialog(self.block)
+        dialog = Dialog(self.block)
 
-        if dialog.exec() == BlockDialog.Accepted:
+        if dialog.exec() == Dialog.Accepted:
             self.block.update_properties(**dialog.properties())
+            self.block.update_constraints(**dialog.constraints())
 
     def mouseMoveEvent(self, e):
         super().mouseMoveEvent(e)

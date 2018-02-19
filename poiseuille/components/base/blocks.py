@@ -4,11 +4,13 @@ from poiseuille.equation import Term, Equation
 class Block:
     TYPE = 'Block'
     UNITS = {}
+    SYMBOLS = {}
 
     def __init__(self, name='Block', id=None):
         self.name = name
         self.id = id
         self.nodes = []
+        self.constraints = {}
 
     def add_nodes(self, *nodes):
         self.nodes.extend(nodes)
@@ -30,9 +32,6 @@ class Block:
     def properties(self):
         raise NotImplementedError
 
-    def property_ranges(self):
-        raise NotImplementedError
-
     def solution(self):
         raise NotImplementedError
 
@@ -44,3 +43,8 @@ class Block:
 
     def update_solution(self, **kwargs):
         raise NotImplementedError
+
+    def update_constraints(self, **kwargs):
+        for name, constraint in kwargs.items():
+            self.constraints[name]['value'] = constraint['value']
+            self.constraints[name]['active'] = constraint['active']

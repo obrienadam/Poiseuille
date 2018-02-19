@@ -77,9 +77,6 @@ def run():
     print('Constraints')
     print(v[0].input.connector.flow_rate)
     print(v[1].input.connector.flow_rate)
-    print('All connectors')
-    for conn in c:
-        print(conn.flow_rate)
 
 
 if __name__ == '__main__':

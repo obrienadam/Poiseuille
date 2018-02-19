@@ -1,75 +1,94 @@
 from PyQt5 import uic
-from PyQt5.QtWidgets import QDialog, QLabel, QDoubleSpinBox, QFormLayout
+from PyQt5.QtWidgets import QDialog, QLabel, QDoubleSpinBox, QHBoxLayout, QCheckBox
 
-class BlockDialog(QDialog):
-    def __init__(self, block):
+
+class Dialog(QDialog):
+    def __init__(self, component):
         super().__init__()
-        uic.loadUi('designer/blockdialog.ui', self)
 
-        self.block = block
+        uic.loadUi('designer/component_dialog.ui', self)
+
+        self.component = component
         self.property_dict = {}
+        self.constraint_dict = {}
 
-        self.setWindowTitle('{}: {}'.format(self.block.TYPE, self.block.name))
+        self.setWindowTitle('{}: {}'.format(component.TYPE, component.name))
 
-        property_layout = self.property_box.layout()
-        solution_layout = self.solution_box.layout()
-        node_pressure_layout = self.node_pressure_box.layout()
+        for key, value in component.properties().items():
+            spin_box = self.get_spin_box(value=value['value'], range=value['range'])
 
-        for key, value in self.block.properties().items():
-            range = block.property_ranges().get(key, (None, None))
-            range = range[0] if range[0] is not None else -float('inf'), range[1] if range[1] is not None else float('inf')
-
-            spin_box = QDoubleSpinBox()
-            spin_box.setRange(*range)
-            spin_box.setDecimals(14)
-            spin_box.setValue(value)
-            spin_box.setAccelerated(True)
-
-            if key in block.UNITS:
-                property_layout.addRow(QLabel('{} ({})'.format(key, block.UNITS[key])), spin_box)
+            if key in component.UNITS:
+                self.property_box.layout().addRow(QLabel('{} ({})'.format(key, component.UNITS[key])), spin_box)
             else:
-                property_layout.addRow(QLabel(key), spin_box)
+                self.property_box.layout().addRow(QLabel(key), spin_box)
 
             self.property_dict[key] = spin_box
 
-        for key, value in self.block.solution().items():
-            solution_layout.addWidget(QLabel('{} = {}'.format(key, value)))
+        for name, constr in component.constraints.items():
+            type = constr['type']
+            value = constr['value']
 
-        for node in self.block.nodes:
-            node_pressure_layout.addWidget(QLabel('{} ({}) = {}'.format(node.id, node.TYPE, node.p)))
+            range = float('-inf'), float('inf')
+
+            if name in self.component.properties():
+                range = self.component.properties()[name]['range']
+
+            spin_box = self.get_spin_box(value=value, range=range, decimals=8)
+            check_box = self.get_check_box(constr['active'], 'Enabled', spin_box)
+
+            field = QHBoxLayout()
+            field.addWidget(spin_box)
+            field.addWidget(check_box)
+
+            self.constraint_dict[name] = {
+                'value': spin_box,
+                'active': check_box
+            }
+
+            self.optimizer_constraint_box.layout().addRow(QLabel('{} {} '.format(name, '>' if type == 'ineq' else '=')),
+                                                          field)
+
+        for key, value in component.solution().items():
+            self.solution_box.layout().addWidget(QLabel('{} = {} {}'.format(key, value, component.UNITS.get(key, ''))))
+
+        for node in component.nodes:
+            self.node_pressure_box.layout().addWidget(
+                QLabel('{} (id={}) = {} {}'.format(node.TYPE, node.id, node.p, component.UNITS['Pressure']))
+            )
+
+        for box in self.solution_box, self.optimizer_constraint_box:
+            if box.layout().isEmpty():
+                box.hide()
 
     def properties(self):
         return {
             key: value.value() for key, value in self.property_dict.items()
         }
 
-class ConnectorDialog(QDialog):
-    def __init__(self, connector):
-        super().__init__()
-        uic.loadUi('designer/blockdialog.ui', self)
-
-        self.connector = connector
-        self.property_dict = {}
-
-        self.setWindowTitle('{}: {}'.format(self.connector.TYPE, self.connector.name))
-
-        property_layout = self.property_box.layout()
-        solution_layout = self.solution_box.layout()
-
-        for key, value in self.connector.properties().items():
-            spin_box = QDoubleSpinBox()
-            spin_box.setValue(value)
-            spin_box.setDecimals(2)
-            spin_box.setRange(-100., 100.)
-            spin_box.setAccelerated(True)
-
-            property_layout.addRow(QLabel(key), spin_box)
-            self.property_dict[key] = spin_box
-
-        for key, value in self.connector.solution().items():
-            solution_layout.addWidget(QLabel('{} = {}'.format(key, value)))
-
-    def properties(self):
+    def constraints(self):
         return {
-            key: value.value() for key, value in self.property_dict.items()
+            name: {
+                'value': constr['value'].value(),
+                'active': constr['active'].isChecked()
+            } for name, constr in self.constraint_dict.items()
         }
+
+    def get_spin_box(self, value=None, range=None, decimals=14):
+        spin_box = QDoubleSpinBox()
+        spin_box.setRange(*range)
+        spin_box.setDecimals(decimals)
+        spin_box.setValue(value)
+        spin_box.setSingleStep(min((range[1] - range[0]) / 100., 1))
+        spin_box.setAccelerated(True)
+        return spin_box
+
+    def get_check_box(self, checked=False, text=None, connected_widget=None):
+        check_box = QCheckBox()
+        check_box.setChecked(checked)
+        check_box.setText(text)
+
+        if connected_widget:
+            check_box.toggled.connect(connected_widget.setEnabled)
+            connected_widget.setEnabled(check_box.isChecked())
+
+        return check_box

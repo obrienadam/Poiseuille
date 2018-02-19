@@ -6,6 +6,11 @@ class Connector:
         self.id = id
         self.input = None
         self.output = None
+        self.constraints = {}
+
+    @property
+    def nodes(self):
+        return self.input, self.output
 
     def connect(self, input, output):
         if input.can_connect(output):

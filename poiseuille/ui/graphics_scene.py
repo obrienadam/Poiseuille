@@ -23,10 +23,19 @@ class GraphicsScene(QGraphicsScene):
         return [item.block for item in self.items() if isinstance(item, base.BlockGraphicsItem)]
 
     def blocks_of_type(self, Block):
-        return [block for block in self.blocks() if isinstance(block, Block)]
+        if isinstance(Block, str):
+            return [block for block in self.blocks() if block.TYPE == Block]
+        else:
+            return [block for block in self.blocks() if isinstance(block, Block)]
+
+    def find_block_graphics_item(self, block):
+        return next((item for item in self.block_graphics_items() if item.block is block), None)
 
     def connectors(self):
         return [item.connector for item in self.items() if isinstance(item, base.ConnectorGraphicsPathItem)]
+
+    def connector_graphics_path_items(self):
+        return (item.connector for item in self.items() if isinstance(item, base.ConnectorGraphicsPathItem))
 
     def num_blocks(self):
         return sum(isinstance(item, base.BlockGraphicsItem) for item in self.items())

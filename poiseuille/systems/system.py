@@ -96,10 +96,12 @@ class IncompressibleSystem(System):
                                       inner_M=inner_M, f_tol=toler, method=method, maxiter=maxiter)
             except NoConvergence as e:
                 self.status = Status.NO_CONVERGENCE
-                p = np.zeros(len(self.nodes()))
+                self.map_solution_to_nodes(np.zeros(len(self.nodes())))
+                return
         except ValueError as e:
             self.status = Status.NAN_DETECTED
-            p = np.zeros(len(self.nodes()))
+            self.map_solution_to_nodes(np.zeros(len(self.nodes())))
+            return
 
         self.status = Status.SOLVED
         self.map_solution_to_nodes(p)

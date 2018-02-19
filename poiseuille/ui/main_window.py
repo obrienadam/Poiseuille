@@ -38,8 +38,6 @@ class MainWindow(QMainWindow):
         self.system_params = SystemUi(scene=self.scene)
         self.optimizer_params = OptimizerUi(scene=self.scene)
 
-        self.main_tab_widget.currentChanged.connect(self.update_params)
-
     def init_palettes(self):
         self.palette_env.setLayout(QHBoxLayout())
         self.palette_power.setLayout(QHBoxLayout())
@@ -99,15 +97,16 @@ class MainWindow(QMainWindow):
         if not self.loaded_case:
             self.on_actionSaveAs()
 
-        with open(self.loaded_case, 'wb') as f:
-            data = {
-                'blocks': self.scene.blocks(),
-                'positions': self.scene.block_positions(),
-                'solver_params': self.system_params.parameters(),
-                'optimizer_params': self.optimizer_params.parameters(),
-            }
+        if self.loaded_case:
+            with open(self.loaded_case, 'wb') as f:
+                data = {
+                    'blocks': self.scene.blocks(),
+                    'positions': self.scene.block_positions(),
+                    'solver_params': self.system_params.parameters(),
+                    'optimizer_params': self.optimizer_params.parameters(),
+                }
 
-            pickle.dump(data, f)
+                pickle.dump(data, f)
 
     def on_actionSaveAs(self):
         dialog = QFileDialog()
@@ -117,10 +116,6 @@ class MainWindow(QMainWindow):
             with open(dialog.selectedFiles()[0], 'wb') as f:
                 self.loaded_case = f.name
 
-    def update_params(self, id):
-        if self.main_tab_widget.widget(id) is self.optimizer_params:
-            self.optimizer_params.update_forms()
-
     def change_params(self, item):
         if self.main_tab_widget.widget(1):
             self.main_tab_widget.removeTab(1)
@@ -128,7 +123,6 @@ class MainWindow(QMainWindow):
         if item is self.system_params_tree_item:
             self.main_tab_widget.addTab(self.system_params, 'System Parameters')
         elif item is self.optimizer_params_tree_item:
-            self.optimizer_params.update_forms()
             self.main_tab_widget.addTab(self.optimizer_params, 'Optimizer Parameters')
 
         self.main_tab_widget.setCurrentIndex(1)

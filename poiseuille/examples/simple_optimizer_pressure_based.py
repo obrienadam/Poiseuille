@@ -1,16 +1,15 @@
 from scipy import optimize as opt
-from poiseuille.components.blocks import PressureReservoir, ConstantDeliveryFan, PerfectJunction, Fan
-from poiseuille.components.connector import Connector
-from poiseuille.components.resistance_functions import ProctorAndGambleResistance
+from poiseuille.components.procter_and_gamble import PressureReservoir, ConstantDeliveryFan, PerfectJunction, Fan
+from poiseuille.components.procter_and_gamble import ProcterAndGambleConnector as Connector
 from poiseuille.systems.system import IncompressibleSystem
 
 
 def run():
-    patm = [PressureReservoir(p=0.) for i in range(4)]
+    patm = [PressureReservoir(p=0.) for _ in range(4)]
     fan = Fan(dp=4)
-    valves = [ConstantDeliveryFan() for i in range(3)]
+    valves = [ConstantDeliveryFan() for _ in range(3)]
     joint = PerfectJunction(num_nodes=4)
-    conns = [Connector(r_func=ProctorAndGambleResistance(d=7.32, l=25)) for i in range(8)]
+    conns = [Connector(diameter=7.32, length=25) for _ in range(8)]
 
     valves[0].flow_rate = 300
     valves[1].flow_rate = 400
@@ -47,7 +46,7 @@ def run():
 
     def callback(x):
         fan.dp = x[0]
-        system.solve(verbose=1, method='gmres', maxiter=200, toler=1e-12)
+        system.solve(verbose=1, method='bicgstab', maxiter=200, toler=1e-12)
 
     constr = [
         {'type': 'ineq', 'fun': h1},
@@ -56,7 +55,7 @@ def run():
     ]
 
     try:
-        print(opt.minimize(obj, [fan.dp], constraints=constr))
+        print(opt.minimize(obj, [fan.dp, 1, 1, 1], constraints=constr))
     except:
         pass
 

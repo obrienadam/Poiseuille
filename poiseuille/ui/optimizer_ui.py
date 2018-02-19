@@ -1,5 +1,6 @@
 from PyQt5 import QtWidgets
 
+import poiseuille.systems as sys
 import poiseuille.optimizers as opt
 from poiseuille.components import procter_and_gamble
 
@@ -8,23 +9,22 @@ class OptimizerUi(QtWidgets.QWidget):
         super().__init__(parent=parent)
 
         self.scene = scene
+        self.setLayout(QtWidgets.QHBoxLayout())
 
-        self.setLayout(QtWidgets.QVBoxLayout())
+        self.target_block_combo_box = QtWidgets.QComboBox()
+        self.target_block_combo_box.addItems(['Fan'])
+        self.target_property_combo_box = QtWidgets.QComboBox()
+        self.target_property_combo_box.addItems(['Pressure differential'])
+        self.objective_function_combo_box = QtWidgets.QComboBox()
+        self.objective_function_combo_box.addItems(['Minimize sum of squares', 'Minimize sum of absolute values'])
 
-        obj_box = QtWidgets.QGroupBox('Objectives')
-        con_box = QtWidgets.QGroupBox('Constraints')
 
-        self.objective_form = QtWidgets.QFormLayout()
-        self.constraint_form = QtWidgets.QFormLayout()
+        self.form = QtWidgets.QFormLayout()
+        self.form.addRow(QtWidgets.QLabel('Objective target block: '), self.target_block_combo_box)
+        self.form.addRow(QtWidgets.QLabel('Objective target property: '), self.target_property_combo_box)
+        self.form.addRow(QtWidgets.QLabel('Objective function: '), self.objective_function_combo_box)
 
-        obj_box.setLayout(self.objective_form)
-        con_box.setLayout(self.constraint_form)
-
-        self.layout().addWidget(obj_box)
-        self.layout().addWidget(con_box)
-
-        self.block_check_box = {}
-        self.block_enabled = {}
+        self.layout().addLayout(self.form)
 
     def init(self, **kwargs):
         pass
@@ -32,37 +32,30 @@ class OptimizerUi(QtWidgets.QWidget):
     def parameters(self):
         return {}
 
-    def update_forms(self):
-        fans = self.scene.blocks_of_type(procter_and_gamble.Fan)
-        resistors = self.scene.blocks_of_type(procter_and_gamble.ResistorValve)
-
-        for block in set(self.block_check_box.keys()):
-            if block not in fans and block not in resistors:
-                del self.block_check_box[block]
-                del self.block_enabled[block]
-            else:
-                print(self.block_check_box[block].isChecked())
-                self.block_enabled[block] = self.block_check_box[block].isChecked()
-
-        for _ in range(self.objective_form.count()):
-            self.objective_form.removeRow(0)
-
-        for _ in range(self.constraint_form.count()):
-            self.constraint_form.removeRow(0)
-
-        for fan in sorted(fans, key=lambda f: f.name):
-            check_box = QtWidgets.QCheckBox()
-            check_box.setChecked(self.block_enabled.get(fan, False))
-
-            self.block_check_box[fan] = check_box
-            self.objective_form.addRow(QtWidgets.QLabel('{} --> objective enabled: '.format(fan.name)), check_box)
-
-        for resistor in sorted(resistors, key=lambda r: r.name):
-            check_box = QtWidgets.QCheckBox()
-            check_box.setChecked(self.block_enabled.get(resistor, False))
-
-            self.block_check_box[resistor] = check_box
-            self.constraint_form.addRow(QtWidgets.QLabel('{} --> constraint enabled: '.format(resistor.name)), check_box)
-
     def solve(self):
-        pass
+        self.system = sys.IncompressibleSystem(blocks=self.scene.blocks())
+        self.optimizer = opt.Optimizer(system=self.system)
+        self.optimizer.init_property_objective_function(
+            self.scene.blocks_of_type(self.target_block_combo_box.currentText()),
+            self.target_property_combo_box.currentText()
+        )
+
+        for block in self.scene.blocks():
+            for name, constr in block.constraints.items():
+                if constr['active']:
+                    if constr['dependent']:
+                        self.optimizer.add_solution_constraint(block, name, constr['type'], constr['value'])
+                    else:
+                        self.optimizer.add_property_constraint(block, name, constr['type'], constr['value'])
+
+                    for prop, data in block.properties().items():
+                        if data['range'][0] != float('-inf'):
+                            self.optimizer.add_property_constraint(block, prop, 'ineq', data['range'][0])
+
+        for block in self.scene.blocks():
+            if block in self.optimizer.objective_func.blocks:
+                for prop, data in block.properties().items():
+                    if data['range'][0] != float('-inf'):
+                        self.optimizer.add_property_constraint(block, prop, 'ineq', data['range'][0])
+
+        self.optimizer.optimize([1], maxiter=1000, verbose=1)

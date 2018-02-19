@@ -1,3 +1,5 @@
+from math import copysign
+
 from poiseuille.components.base.blocks import Block
 from poiseuille.components.base.nodes import Node, Input, Output
 from poiseuille.equation.equation import Equation, Term
@@ -8,7 +10,16 @@ class ProcterAndGambleBlock(Block):
         'Pressure': 'in H2O',
         'Pressure differential': 'in H2O',
         'Flow rate': 'CFM',
-        'Max flow rate': 'CFM'
+        'Max flow rate': 'CFM',
+        'Resistance': 'in H2O/CFM'
+    }
+
+    SYMBOLS = {
+        'Pressure': 'p',
+        'Pressure differential': 'dp',
+        'Flow rate': 'flow_rate',
+        'Max flow rate': 'max_flow_rate',
+        'Resistance': 'r'
     }
 
     def __init__(self, name='P&G Block'):
@@ -25,10 +36,9 @@ class PressureReservoir(ProcterAndGambleBlock):
         self.add_nodes(self.node)
 
     def properties(self):
-        return {'Pressure': self.p}
-
-    def property_ranges(self):
-        return {'Pressure': (-float('inf'), float('inf'))}
+        return {
+            'Pressure': {'value': self.p, 'range': (float('-inf'), float('inf'))}
+        }
 
     def solution(self):
         return {}
@@ -59,10 +69,9 @@ class Fan(ProcterAndGambleBlock):
         return 'Fan'
 
     def properties(self):
-        return {'Pressure differential': self.dp}
-
-    def property_ranges(self):
-        return {'Pressure differential': (None, None)}
+        return {
+            'Pressure differential': {'value': self.dp, 'range': (0., float('inf'))}
+        }
 
     def solution(self):
         return {'Flow rate': self.flow_rate}
@@ -89,10 +98,9 @@ class ConstantDeliveryFan(ProcterAndGambleBlock):
         self.add_nodes(self.input, self.output)
 
     def properties(self):
-        return {'Flow rate': self.flow_rate}
-
-    def property_ranges(self):
-        return {'Flow rate': (None, None)}
+        return {
+            'Flow rate': {'value': self.flow_rate, 'range': (0., float('inf'))}
+        }
 
     def solution(self):
         return {'Pressure differential': self.dp}
@@ -118,9 +126,6 @@ class PowerCurveFan(Fan):
         self.fcn = fcn
 
     def properties(self):
-        return {}
-
-    def property_ranges(self):
         return {}
 
     def solution(self):
@@ -149,17 +154,23 @@ class ResistorValve(ProcterAndGambleBlock):
         self.add_nodes(self.input, self.output)
         self.flow_rate = 0.
 
+        self.constraints = {
+            'Flow rate': {
+                'type': 'eq',
+                'value': 0.,
+                'active': False,
+                'dependent': True,
+                'optional': True
+            }
+        }
+
     def properties(self):
-        return {'Resistance': self.r}
-
-    def property_ranges(self):
-        return {'Resistance': (0, None)}
-
-    def property_ranges(self):
-        return {'Pressure differential': (None, None)}
+        return {
+            'Resistance': {'value': self.r, 'range': (0., float('inf'))}
+        }
 
     def solution(self):
-        return {}
+        return {'Flow rate': self.flow_rate}
 
     def equations(self):
         p1 = self.input.connector.other(self.input)
@@ -175,10 +186,7 @@ class ResistorValve(ProcterAndGambleBlock):
         self.min_r = kwargs.get('Minimum resistance', self.min_r)
 
     def update_solution(self):
-        if self.r != 0.:
-            self.flow_rate = (self.input.p - self.output.p) / self.r
-        else:
-            self.flow_rate = self.input.connector.flow_rate
+        self.flow_rate = copysign(self.input.connector.flow_rate, self.input.p - self.output.p)
 
 
 class PerfectSplitter(ProcterAndGambleBlock):
@@ -245,14 +253,8 @@ class Joiner(ProcterAndGambleBlock):
 
     def properties(self):
         return {
-            'Regain coefficient': self.k_regain,
-            'Loss coefficient': self.k_loss
-        }
-
-    def property_ranges(self):
-        return {
-            'Regain coefficient': (0, 1),
-            'Loss coefficient': (0, None)
+            'Regain coefficient': {'value': self.k_regain, 'range': (0., 1.)},
+            'Loss coefficient': {'value': self.k_loss, 'range': (0., float('inf'))}
         }
 
     def solution(self):

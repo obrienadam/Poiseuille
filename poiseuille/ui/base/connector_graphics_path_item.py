@@ -3,7 +3,7 @@ from PyQt5.QtGui import QPainterPath
 from PyQt5.QtWidgets import QGraphicsPathItem, QGraphicsTextItem
 
 from poiseuille.components.procter_and_gamble.connector import ProcterAndGambleConnector
-from poiseuille.ui.dialog import ConnectorDialog
+from poiseuille.ui.dialog import Dialog
 
 class ConnectorGraphisPathItemLabel(QGraphicsTextItem):
     div = '<span style="background-color: white; border-style: solid; border-width: 1px; border-color: red;">{}</span>'
@@ -72,7 +72,7 @@ class ConnectorGraphicsPathItem(QGraphicsPathItem):
             self.scene().removeItem(self)
 
     def mouseDoubleClickEvent(self, e):
-        dialog = ConnectorDialog(self.connector)
+        dialog = Dialog(self.connector)
 
-        if dialog.exec() == ConnectorDialog.Accepted:
+        if dialog.exec() == Dialog.Accepted:
             self.connector.update_properties(**dialog.properties())

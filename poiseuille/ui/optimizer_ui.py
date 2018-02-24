@@ -58,4 +58,11 @@ class OptimizerUi(QtWidgets.QWidget):
                     if data['range'][0] != float('-inf'):
                         self.optimizer.add_property_constraint(block, prop, 'ineq', data['range'][0])
 
-        self.optimizer.optimize([1], maxiter=1000, verbose=1)
+        x0 = []
+        for fan in self.scene.blocks_of_type(procter_and_gamble.Fan):
+            x0.append(fan.dp)
+
+        for r in self.scene.blocks_of_type(procter_and_gamble.ResistorValve):
+            x0.append(r.r)
+
+        self.optimizer.optimize(x0, maxiter=1000, verbose=1)

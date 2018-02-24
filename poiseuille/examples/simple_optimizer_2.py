@@ -10,7 +10,7 @@ def run():
     fan = Fan(dp=0)
     valves = [ResistorValve(r=0) for _ in range(3)]
     joint = PerfectJunction(num_nodes=4)
-    conns = [Connector(length=25) for _ in range(8)]
+    conns = [Connector(length=25, diameter=1 + i) for i in range(8)]
 
     conns[0].connect(patm[0].node, valves[0].input)
     conns[1].connect(patm[1].node, valves[1].input)
@@ -28,10 +28,10 @@ def run():
     optimizer.init_objective_function(blocks=[fan], var='dp')
 
     for i, v in enumerate(valves):
-        optimizer.add_property_constraint(block=v, property='Resistance', type='ineq', value=0)
-        optimizer.add_solution_constraint(block=v, solution='Flow rate', type='eq', value=134)
+        optimizer.add_property_constraint(v, 'Resistance', 'ineq', 0.)
+        optimizer.add_solution_constraint(v, 'Flow rate', 'eq', 130 + 12 * i)
 
-    optimizer.optimize(guess=[0.005,0,0,0,0,0,0,0,0])
+    optimizer.optimize(guess=[1, 0, 0, 0])
 
     print('Objectives')
     print(fan.dp)

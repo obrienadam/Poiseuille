@@ -166,7 +166,7 @@ class ResistorValve(ProcterAndGambleBlock):
 
     def properties(self):
         return {
-            'Resistance': {'value': self.r, 'range': (0., float('inf'))}
+            'Resistance': {'value': self.r, 'range': (0., float('inf')), 'precision': 8}
         }
 
     def solution(self):
@@ -188,6 +188,44 @@ class ResistorValve(ProcterAndGambleBlock):
     def update_solution(self):
         self.flow_rate = copysign(self.input.connector.flow_rate, self.input.p - self.output.p)
 
+class PressureValve(ProcterAndGambleBlock):
+    TYPE = 'Pressure Valve'
+
+    def __init__(self, k_loss=0.):
+        super().__init__(name='PR')
+        self.k_loss = k_loss
+        self.flow_rate = 0.
+        self.velocity_pressure = 0.
+        self.input = Input(self, p=0)
+        self.output = Output(self, p=0)
+        self.add_nodes(self.input, self.output)
+
+    def properties(self):
+        return {
+            'Loss coefficient': {'value': self.k_loss, 'range': (0., float('inf')), 'precision': 2}
+        }
+
+    def solution(self):
+        return {
+            'Flow rate': self.flow_rate
+        }
+    def update_properties(self, **kwargs):
+        self.k_loss = kwargs.get('Loss coefficient', self.k_loss)
+
+    def update_solution(self, **kwargs):
+        self.flow_rate = copysign(self.input.connector.flow_rate, self.input.p - self.output.p)
+        self.velocity_pressure = self.input.connector.velocity_pressure
+
+    def equations(self):
+        vp_1 = self.input.connector.velocity_pressure
+        vp_2 = self.output.connector.velocity_pressure
+
+        eqn = Equation([
+            Term(self.input, -1.),
+            Term(self.output, 1.)
+        ], vp_1 - vp_2 - self.k_loss * (vp_1 + vp_2) / 2.)
+
+        return [self.continuity_equation(), eqn]
 
 class PerfectSplitter(ProcterAndGambleBlock):
     TYPE = 'Perfect Splitter'
@@ -277,41 +315,26 @@ class Joiner(ProcterAndGambleBlock):
         vp_1 = c1.velocity_pressure
         vp_2 = c2.velocity_pressure
         vp_3 = c3.velocity_pressure
-        q1 = c1.flow_rate
-        q2 = c2.flow_rate
-        q3 = c3.flow_rate
-
-        if vp_1 - vp_3 > 0:
-            a1 = self.k_regain * vp_1 / q1 if q1 != 0. else 0.
-            a3 = -self.k_regain * vp_3 / q3 if q3 != 0. else 0.
-        else:
-            a1 = self.k_loss * vp_1 / q1 if q1 != 0. else 0.
-            a3 = -self.k_loss * vp_3 / q3 if q3 != 0. else 0.
 
         eqn1 = Equation([
-            Term(self.output, 1),
-            Term(self.input_1, -1),
-            Term(c1.input, a1 / c1.r),
-            Term(c1.output, -a1 / c1.r),
-            Term(c3.input, -a3 / c3.r),
-            Term(c3.output, a3 / c3.r)
+            Term(self.output, 1.),
+            Term(self.input_1, -1.)
         ])
-
-        if vp_2 - vp_3 > 0:
-            a2 = self.k_regain * vp_2 / q2 if q2 != 0. else 0.
-            a3 = -self.k_regain * vp_3 / q3 if q3 != 0. else 0.
-        else:
-            a2 = self.k_loss * vp_2 / q2 if q2 != 0. else 0.
-            a3 = -self.k_loss * vp_3 / q3 if q3 != 0. else 0.
 
         eqn2 = Equation([
-            Term(self.output, 1),
-            Term(self.input_2, -1),
-            Term(c1.input, a2 / c2.r),
-            Term(c1.output, -a2 / c2.r),
-            Term(c3.input, -a3 / c3.r),
-            Term(c3.output, a3 / c3.r)
+            Term(self.output, 1.),
+            Term(self.input_2, -1.)
         ])
+
+        if vp_1 - vp_3 > 0:
+            eqn1.rhs = self.k_regain * (vp_1 - vp_3)
+        else:
+            eqn1.rhs = self.k_loss * (vp_1 - vp_3)
+
+        if vp_2 - vp_3 > 0.:
+            eqn2.rhs = self.k_regain * (vp_2 - vp_3)
+        else:
+            eqn2.rhs = self.k_loss * (vp_2 - vp_3)
 
         return [self.continuity_equation(), eqn1, eqn2]
 

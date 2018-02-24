@@ -16,6 +16,8 @@ class ProcterAndGambleBlockGraphicsItem(BlockGraphicsItem):
             return ConstDeliveryFanGraphicsItem(block=block)
         elif type == 'Resistor Valve':
             return ResistorValveGraphicsItem(block=block)
+        elif type == 'Pressure Valve':
+            return PressureValveGraphicsItem(block=block)
         elif type == 'Joiner':
             return JoinerGraphicsItem(block=block)
         else:
@@ -59,6 +61,9 @@ class ResistorValveGraphicsItem(ProcterAndGambleBlockGraphicsItem):
         self.nodes.append(NodeGraphicsItem(self.block.input, self, x=-7.5, y=17.5))
         self.nodes.append(NodeGraphicsItem(self.block.output, self, x=47.5, y=17.5))
 
+class PressureValveGraphicsItem(ResistorValveGraphicsItem):
+    def __init__(self, block=None):
+        super().__init__(block=block if block else PressureValve())
 
 class JoinerGraphicsItem(ProcterAndGambleBlockGraphicsItem):
     def __init__(self, block=None):

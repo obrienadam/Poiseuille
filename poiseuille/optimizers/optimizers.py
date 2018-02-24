@@ -66,7 +66,7 @@ class Optimizer:
             setattr(var[0], var[1], val)
 
         if resolve:
-            self.system.solve(maxiter=2500, toler=1e-10, verbose=1, method='lgmres')
+            self.system.solve(maxiter=2000, toler=1e-8, verbose=1, method='lgmres')
 
     def init_objective_function(self, blocks, var):
         self.independent_vars.extend((block, var) for block in blocks)
@@ -90,15 +90,14 @@ class Optimizer:
     def add_solution_constraint(self, block, solution, type, value):
         self.add_constraint(block, block.SYMBOLS[solution], type, value, True)
 
-    def optimize(self, guess=[], maxiter=1000, verbose=1):
+    def optimize(self, guess=[], maxiter=200, verbose=1):
         constr = [c.get_dict() for c in self.constraint_funcs]
 
         if len(guess) < len(self.independent_vars):
             guess += [0] * (len(self.independent_vars) - len(guess))
 
-        opts = {
-            'maxiter': maxiter,
-            'disp': bool(verbose)
-        }
+        self.system.map_solution_to_nodes(np.zeros(len(self.system.nodes())))
 
-        opt.minimize(self.objective_func, x0=guess[:len(self.independent_vars)], constraints=constr, options=opts)
+        result = opt.minimize(self.objective_func, x0=guess[:len(self.independent_vars)], constraints=constr)
+
+        print(result)

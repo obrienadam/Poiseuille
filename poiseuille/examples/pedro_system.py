@@ -24,6 +24,7 @@ def run():
     c[9].connect(f[2].output, p[4].node)
 
     system = IncompressibleSystem(p + [j] + f + v)
+    system.assign_node_ids()
 
     # system.solve(verbose=1, method='gmres')
     # iters, error = system.solve(max_iters=200, toler=1e-9)

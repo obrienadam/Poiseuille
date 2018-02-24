@@ -15,7 +15,7 @@ class Dialog(QDialog):
         self.setWindowTitle('{}: {}'.format(component.TYPE, component.name))
 
         for key, value in component.properties().items():
-            spin_box = self.get_spin_box(value=value['value'], range=value['range'])
+            spin_box = self.get_spin_box(value=value['value'], range=value['range'], decimals=value.get('precision', 2))
 
             if key in component.UNITS:
                 self.property_box.layout().addRow(QLabel('{} ({})'.format(key, component.UNITS[key])), spin_box)

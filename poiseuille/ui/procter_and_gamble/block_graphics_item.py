@@ -12,8 +12,8 @@ class ProcterAndGambleBlockGraphicsItem(BlockGraphicsItem):
             return PressureReservoirGraphicsItem(block=block)
         elif type == 'Fan':
             return FanGraphicsItem(block=block)
-        elif type == 'Constant Delivery Fan':
-            return ConstDeliveryFanGraphicsItem(block=block)
+        elif type == 'Flow Regulator':
+            return FlowRegulatorGraphicsItem(block=block)
         elif type == 'Resistor Valve':
             return ResistorValveGraphicsItem(block=block)
         elif type == 'Pressure Valve':
@@ -27,6 +27,8 @@ class ProcterAndGambleBlockGraphicsItem(BlockGraphicsItem):
 
 
 class PressureReservoirGraphicsItem(ProcterAndGambleBlockGraphicsItem):
+    Block = PressureReservoir
+
     def __init__(self, block=None):
         super().__init__(block=block if block else PressureReservoir(), file='resources/pressure_reservoir')
 
@@ -35,6 +37,8 @@ class PressureReservoirGraphicsItem(ProcterAndGambleBlockGraphicsItem):
 
 
 class FanGraphicsItem(ProcterAndGambleBlockGraphicsItem):
+    Block = Fan
+
     def __init__(self, block=None):
         fan = block
         super().__init__(block=block if block else Fan(), file='resources/fan')
@@ -44,9 +48,11 @@ class FanGraphicsItem(ProcterAndGambleBlockGraphicsItem):
         self.nodes.append(NodeGraphicsItem(self.block.output, self, x=47.5, y=17.5))
 
 
-class ConstDeliveryFanGraphicsItem(ProcterAndGambleBlockGraphicsItem):
+class FlowRegulatorGraphicsItem(ProcterAndGambleBlockGraphicsItem):
+    Block = FlowRegulator
+
     def __init__(self, block=None):
-        super().__init__(block=block if block else ConstantDeliveryFan(), file='resources/const_flow_fan')
+        super().__init__(block=block if block else FlowRegulator(), file='resources/const_flow_fan')
 
     def init_nodes(self):
         self.nodes.append(NodeGraphicsItem(self.block.input, self, x=-7.5, y=17.5))
@@ -54,6 +60,8 @@ class ConstDeliveryFanGraphicsItem(ProcterAndGambleBlockGraphicsItem):
 
 
 class ResistorValveGraphicsItem(ProcterAndGambleBlockGraphicsItem):
+    Block = ResistorValve
+
     def __init__(self, block=None):
         super().__init__(block=block if block else ResistorValve(), file='resources/valve')
 
@@ -62,10 +70,14 @@ class ResistorValveGraphicsItem(ProcterAndGambleBlockGraphicsItem):
         self.nodes.append(NodeGraphicsItem(self.block.output, self, x=47.5, y=17.5))
 
 class PressureValveGraphicsItem(ResistorValveGraphicsItem):
+    Block = PressureValve
+
     def __init__(self, block=None):
         super().__init__(block=block if block else PressureValve())
 
 class JoinerGraphicsItem(ProcterAndGambleBlockGraphicsItem):
+    Block = Joiner
+
     def __init__(self, block=None):
         super().__init__(block=block if block else Joiner(), file='resources/joiner')
 

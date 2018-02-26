@@ -49,11 +49,15 @@ class Dialog(QDialog):
                                                           field)
 
         for key, value in component.solution().items():
-            self.solution_box.layout().addWidget(QLabel('{} = {} {}'.format(key, value, component.UNITS.get(key, ''))))
+            disp = '{:.2f}'.format(value) if abs(value) >= 0.1 or value == 0. else '{:.2e}'.format(value)
+            self.solution_box.layout().addWidget(
+                QLabel('{} = {} {}'.format(key, disp, component.UNITS.get(key, '')))
+            )
 
         for node in component.nodes:
+            disp = '{:.2f}'.format(node.p) if abs(node.p) >= 0.1 or node.p == 0. else '{:.2e}'.format(node.p)
             self.node_pressure_box.layout().addWidget(
-                QLabel('{} (id={}) = {} {}'.format(node.TYPE, node.id, node.p, component.UNITS['Pressure']))
+                QLabel('{} (id={}) = {} {}'.format(node.TYPE, node.id, disp, component.UNITS['Pressure']))
             )
 
         for box in self.solution_box, self.optimizer_constraint_box:

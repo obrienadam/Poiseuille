@@ -30,7 +30,7 @@ class PressureReservoir(ProcterAndGambleBlock):
     TYPE = 'Pressure Reservoir'
 
     def __init__(self, p=0.):
-        super().__init__(name='PATM')
+        super().__init__(name='Pressure')
         self.p = p
         self.node = Node(self, p=0.)
         self.add_nodes(self.node)
@@ -86,11 +86,11 @@ class Fan(ProcterAndGambleBlock):
         self.flow_rate = self.input.connector.flow_rate
 
 
-class ConstantDeliveryFan(ProcterAndGambleBlock):
-    TYPE = 'Constant Delivery Fan'
+class FlowRegulator(ProcterAndGambleBlock):
+    TYPE = 'Flow Regulator'
 
     def __init__(self, flow_rate=0.):
-        super().__init__(name='Q Fan')
+        super().__init__(name='Regulator')
         self.flow_rate = flow_rate
         self.dp = 0.
         self.input = Input(self, p=0.)

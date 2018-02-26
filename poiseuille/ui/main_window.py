@@ -1,11 +1,11 @@
 import pickle
 
-from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QFileDialog, QLabel, QCheckBox
+from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QFileDialog, QGraphicsView
 from PyQt5 import uic
 
 from .graphics_scene import GraphicsScene
 from ..ui import procter_and_gamble
-from .palette import BlockPaletteItem
+from .palette import BlockPalette
 
 from .system_ui import SystemUi
 from .optimizer_ui import OptimizerUi
@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
         self.init_actions()
         self.loaded_case = None
         self.saved = True
-        self.show()
+        self.showMaximized()
 
     def init_parameters_tree(self):
         self.system_params_tree_item = self.parameters_tree.topLevelItem(0).child(0)
@@ -39,16 +39,22 @@ class MainWindow(QMainWindow):
         self.optimizer_params = OptimizerUi(scene=self.scene)
 
     def init_palettes(self):
-        self.palette_env.setLayout(QHBoxLayout())
-        self.palette_power.setLayout(QHBoxLayout())
-        self.palette_valves.setLayout(QHBoxLayout())
+        self.environment_palette = BlockPalette()
+        self.power_palette = BlockPalette()
+        self.flow_control_palette = BlockPalette()
+        self.jointers_splitters_palette = BlockPalette()
 
-        self.palette_env.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.PressureReservoirGraphicsItem))
-        self.palette_power.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.FanGraphicsItem))
-        self.palette_power.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.ConstDeliveryFanGraphicsItem))
-        self.palette_valves.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.ResistorValveGraphicsItem))
-        self.palette_valves.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.PressureValveGraphicsItem))
-        self.palette_valves.layout().addWidget(BlockPaletteItem(block=procter_and_gamble.JoinerGraphicsItem))
+        self.palette_tabs.addTab(self.environment_palette, 'Environment')
+        self.palette_tabs.addTab(self.power_palette, 'Power')
+        self.palette_tabs.addTab(self.flow_control_palette, 'Flow Control')
+        self.palette_tabs.addTab(self.jointers_splitters_palette, 'Joiners/Splitters')
+
+        self.environment_palette.add_block_type(procter_and_gamble.PressureReservoirGraphicsItem)
+        self.power_palette.add_block_type(procter_and_gamble.FanGraphicsItem)
+        self.flow_control_palette.add_block_type(procter_and_gamble.ResistorValveGraphicsItem)
+        self.flow_control_palette.add_block_type(procter_and_gamble.PressureValveGraphicsItem)
+        self.flow_control_palette.add_block_type(procter_and_gamble.FlowRegulatorGraphicsItem)
+        self.jointers_splitters_palette.add_block_type(procter_and_gamble.JoinerGraphicsItem)
 
     def init_actions(self):
         # Parameter tree

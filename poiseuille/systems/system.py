@@ -98,17 +98,35 @@ class IncompressibleSystem(System):
             self.status = Status.INVALID_SYSTEM_STATE
             return
 
+        x0 = np.array([node.p for node in self.nodes()])
+        self.map_solution_to_nodes(x0)
+
         inner_M = IncompressibleSystem.LinearPreconditioner(len(self.nodes()), self)
+
         try:
-            p = opt.newton_krylov(self.residual, np.array([node.p for node in self.nodes()]), verbose=verbose,
-                                  inner_M=inner_M, f_tol=toler, method=method, maxiter=maxiter, inner_maxiter=1, outer_k=3)
+            p = opt.newton_krylov(self.residual,
+                                  x0,
+                                  verbose=verbose,
+                                  inner_M=inner_M,
+                                  f_tol=toler,
+                                  method=method,
+                                  maxiter=maxiter,
+                                  inner_maxiter=1,
+                                  outer_k=3)
         except NoConvergence as e:  # If iterations fail, restart using zeros
             try:
-                p = opt.newton_krylov(self.residual, np.zeros(len(self.nodes())), verbose=verbose,
-                                      inner_M=inner_M, f_tol=toler, method=method, maxiter=maxiter)
+                x0 = np.zeros(len(self.nodes()))
+                self.map_solution_to_nodes(x0)
+
+                p = opt.newton_krylov(self.residual,
+                                      x0,
+                                      verbose=verbose,
+                                      inner_M=inner_M,
+                                      f_tol=toler,
+                                      method=method,
+                                      maxiter=maxiter)
             except NoConvergence as e:
                 self.status = Status.NO_CONVERGENCE
-                self.map_solution_to_nodes(np.zeros(len(self.nodes())))
                 return
         except ValueError as e:
             self.status = Status.NAN_DETECTED
